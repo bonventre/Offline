@@ -81,7 +81,7 @@ namespace mu2e {
     if (index < 0)
       index = 0;
 
-    double straw_length = strawLengths[sid.getStraw()]/10.;
+    double straw_length = strawLengths[sid.getStraw()];
     double reflection_time = _reflectionTimeShift + (straw_length-2*distance)/_reflectionVelocity;
     int index_refl = (time + reflection_time)*_sampleRate + _responseBins/2.;
     if (index_refl >= _responseBins)
@@ -89,7 +89,7 @@ namespace mu2e {
     if (index_refl < 0)
       index_refl = 0;
 
-    double reflection_scale = _reflectionFrac * exp(-(straw_length-2*distance)/_reflectionALength);
+    double reflection_scale = _reflectionFrac * exp(-(2*straw_length-2*distance)/_reflectionALength);
 
     int  distIndex = 0;
     for (size_t i=1;i<_wPoints.size()-1;i++){
