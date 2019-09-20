@@ -97,6 +97,8 @@ namespace mu2e {
     auto thresh = StrawElectronics::thresh;
     auto adc    = StrawElectronics::adc;
 
+    auto integral_normalization = log(responseBins/2/sampleRate + _config.currentT0s()[0]) - log(_config.currentT0s()[0]); // integral of 1/(t+t0) for 0 cm
+
     std::vector<StrawElectronics::WireDistancePoint> wPoints;
     for (size_t ai=0;ai<_config.wireDistances().size();ai++){
       wPoints.emplace_back( _config.wireDistances()[ai],
@@ -118,7 +120,7 @@ namespace mu2e {
 	// correct for sampleRate so that calculateResponse peak is independent of it
 	// this combined with pC_per_uA_ns is the unit transform from pC to uA
 	wPoints[ai]._currentPulse[i] /= sampleRate * pC_per_uA_ns;
-	wPoints[ai]._currentPulse[i] /= 4.615; // normalization for 1/(t+t0)
+	wPoints[ai]._currentPulse[i] /= integral_normalization; // normalization for 1/(t+t0)
 	wPoints[ai]._currentPulse[i] *= wPoints[ai]._normalization;
       }
       

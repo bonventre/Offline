@@ -371,6 +371,7 @@ namespace mu2e {
           _sddiag->Branch("mcgen",&_dmcgen,"mcgen/I");
           _sddiag->Branch("mcmom",&_dmcmom,"mcmom/F");
           _sddiag->Branch("xtalk",&_xtalk,"xtalk/B");
+          _sddiag->Branch("ewmoffset",&_ewMarkerOffset,"ewmoffset/F");
 
         }
       }
