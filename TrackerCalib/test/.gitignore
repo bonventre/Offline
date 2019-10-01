@@ -1,0 +1,6 @@
+bin/*
+event/Dict.so
+event/Dict.cc
+event/Dict_rdict.pcm
+include/*
+build/*
