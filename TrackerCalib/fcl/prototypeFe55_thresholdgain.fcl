@@ -1,0 +1,71 @@
+#include "JobConfig/primary/prolog.fcl"
+#include "fcl/standardProducers.fcl"
+#include "TrkDiag/fcl/prolog.fcl"
+#include "TrkHitReco/fcl/prolog.fcl"
+
+process_name : prototypeFe55Center
+
+source: { module_type : EmptyEvent }
+services: @local::Services.Sim
+physics : { 
+  producers : {
+    generate : {
+      module_type: EventGenerator 
+      particleGun: {do : 1}
+      inputfile : "TrackerCalib/fcl/generate_prototypeFe55Center.txt"
+    }
+    @table::Primary.producers
+    @table::TrkHitReco.producers
+  }
+  filters: { @table::Primary.filters }
+  analyzers: { 
+    @table::Primary.analyzers
+    @table::TrkDiag.analyzers
+  }
+  TriggerPath: [
+    @sequence::Primary.GenAndG4,
+    @sequence::CommonMC.DigiSim,
+    @sequence::TrackerMC.DigiSim,
+    @sequence::TrkHitReco.PrepareHits
+   ]
+ 
+  EndPath : [
+      "genCountLogger",
+      "Output",
+      "SHD"
+  ]
+
+}
+outputs : { 
+  Output :@local::Primary.Output
+}
+
+outputs.Output.outputCommands: ["keep *_*_*_*"]
+
+
+# customize the output
+services.TFileService.fileName: "dig.prototypeFe55Center.root"
+outputs.Output.fileName: "dig.prototypeFe55Center.art"
+
+services.GeometryService.inputFile : "TrackerCalib/geom/geom_prototype.txt"
+
+services.SeedService.baseSeed         :  773652
+services.SeedService.maxUniqueEngines :  20
+
+physics.producers.g4run.enableSD : [ tracker,  virtualdetector ]
+physics.producers.g4run.sensitiveVolumes: []
+
+physics.producers.makeSD.diagLevel : 3
+physics.producers.makeSD.WaveformDiagPath: 0
+physics.producers.makeSH.diagLevel : 2
+
+physics.analyzers.SHD.StrawDigiMCCollection : "makeSD"
+physics.analyzers.SHD.TimeOffsets.inputs : [ "protonTimeMap", "muonTimeMap", "cosmicTimeMap" ]
+
+#include "TrackerCalib/fcl/epilog.fcl"
+
+services.ProditionsService.strawDrift.wireVoltage : 1200
+services.ProditionsService.strawPhysics.gasGain : 0.8548e4
+
+services.ProditionsService.strawElectronics.discriminatorThreshold : []
+services.ProditionsService.strawElectronics.defaultDiscriminatorThreshold : 16.0

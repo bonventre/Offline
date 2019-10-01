@@ -29,8 +29,12 @@ clean:
 
 build_dirs:
 	@mkdir -p build
+	@mkdir -p build/prototype
+	@mkdir -p build/fit
 	@mkdir -p include
 	@mkdir -p include/event
+	@mkdir -p include/prototype
+	@mkdir -p include/fit
 	@mkdir -p bin
 
 event/Dict.cc:

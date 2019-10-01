@@ -1,0 +1,35 @@
+// 105 MeV Electrons aimed at center +-6 mm of straws 88-95 (centered on straws 89-90) of panel 1
+
+// enable process
+bool particleGun.do = true;
+
+// Limits on cos(polar angle):
+double particleGun.czmin =  0.98;
+double particleGun.czmax =  1.0;
+
+// Limits on phi angle:
+double particleGun.phimin = 4.974199;
+double particleGun.phimax = 4.974201;
+
+// Time limits in ns, relative to protons on target.
+double particleGun.tmin  =  1000.0;
+double particleGun.tmax  =  1000.0;
+
+// position
+vector<double> particleGun.point = {-4077.653, 648.137, 8601.5};
+vector<double> particleGun.halfLength = { 5., 5., 5. };
+
+// Limits on momentum (I'm pretty sure this is MeV/c):
+double particleGun.pmin = 2000;
+double particleGun.pmax = 2000;
+
+// Particle Id (22 for Xrays!)
+int particleGun.id = 13;
+
+// Mean particle.
+double particleGun.mean =  -1;
+
+// Control of histograms.
+bool particleGun.doHistograms = false;
+
+bool particleGun.verbose = false;
