@@ -1,0 +1,30 @@
+services.ProditionsService.strawElectronics.preampPoles : [ 160., 6. ]
+services.ProditionsService.strawElectronics.preampZeros : [ 0.2 ]
+services.ProditionsService.strawElectronics.ADCPoles : [ 160., 6., 1.56 ]
+services.ProditionsService.strawElectronics.ADCZeros : [ 0.2 ]
+services.ProditionsService.strawElectronics.preampToAdc1Poles : [ 160., 6. ]
+services.ProditionsService.strawElectronics.preampToAdc1Zeros : [ 0.2 ]
+services.ProditionsService.strawElectronics.preampToAdc2Poles : [ 1.56 ]
+services.ProditionsService.strawElectronics.preampToAdc2Zeros : [ ]
+services.ProditionsService.strawElectronics.wireDistances : [ 0., 300., 600., 900., 1200. ]
+services.ProditionsService.strawElectronics.currentSigmas : [ 2.13, 2.13, 2.13, 2.13, 2.13 ]
+services.ProditionsService.strawElectronics.currentT0s : [ 1.06, 2.02, 2.98, 3.94, 4.9 ]
+services.ProditionsService.strawElectronics.reflectionTimeShift : 4.62
+services.ProditionsService.strawElectronics.reflectionVelocity : 447.9
+services.ProditionsService.strawElectronics.reflectionALength : 1596.
+services.ProditionsService.strawElectronics.reflectionFrac : 0.61
+services.ProditionsService.strawElectronics.currentMeans : [ 0, -0.136141,  -0.272281, -0.408422, -0.544562 ]
+services.ProditionsService.strawElectronics.currentNormalizations : [ 1.0, 1.10645152, 1.10789792, 1.05703535, 0.97931977 ]
+
+#services.ProditionsService.strawElectronics.TDCLSB : 0.015625
+#services.ProditionsService.strawElectronics.maxTDC : 999999
+
+services.ProditionsService.strawElectronics.defaultAdcdVdI : 2.5e6
+services.ProditionsService.strawElectronics.defaultThresholddVdI : 5.0e6
+services.ProditionsService.strawElectronics.saturationVoltage : 999999.
+
+services.ProditionsService.strawElectronics.strawNoise : 0
+services.ProditionsService.strawElectronics.thresholdAnalogNoise : 1.15
+services.ProditionsService.strawElectronics.adcAnalogNoise : 4.5
+
+services.ProditionsService.strawElectronics.discriminatorThreshold : []
