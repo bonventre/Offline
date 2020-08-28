@@ -27,12 +27,13 @@ namespace ParametricFit{
 	void TestConditions(XYZVec XPrime, XYZVec YPrime, XYZVec ZPrime);
 	XYZVec ConvertToPrimePoint(ComboHit* chit, TrackAxes axes);
 	
-	std::vector<double> GetErrors(ComboHit* Hit, XYZVec XAxis, XYZVec YAxis);
-	XYZVec MajorAxis(ComboHit* Hit);
-	XYZVec MinorAxis(ComboHit* Hit);
-	double HitErrorX(ComboHit* Hit, XYZVec major_axis, XYZVec minor_axis, XYZVec XPrime);
-        double HitErrorY(ComboHit* Hit, XYZVec major_axis, XYZVec minor_axis, XYZVec YPrime);
-        double TotalHitError(ComboHit* Hit, XYZVec major_axis, XYZVec minor_axis, XYZVec XPrime, XYZVec YPrime);
+	std::vector<double> GetErrors(ComboHit const& Hit, XYZVec XAxis, XYZVec YAxis);
+	XYZVec MajorAxis(ComboHit const& Hit);
+	XYZVec MinorAxis(ComboHit const& Hit);
+        double HitErrorDir(ComboHit const& Hit, XYZVec direction);
+	double HitErrorX(XYZVec major_axis, XYZVec minor_axis, XYZVec XPrime);
+        double HitErrorY(XYZVec major_axis, XYZVec minor_axis, XYZVec YPrime);
+        double TotalHitError(XYZVec major_axis, XYZVec minor_axis, XYZVec XPrime, XYZVec YPrime);
         
         double GetHitChi2(double A0, double A1, double errorX, XYZVec point, XYZVec XDoublePrime, XYZVec ZPrime);
         double GetGlobalChi2(double a0, double a1, double b0, double b1, XYZVec prime_point, double errX, double errY, int DOF);

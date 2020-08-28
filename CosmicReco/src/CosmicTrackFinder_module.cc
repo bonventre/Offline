@@ -80,6 +80,8 @@ public:
     fhicl::Atom<int> debug{Name("debugLevel"), Comment("set to 1 for debug prints"),1};
     fhicl::Atom<int> minnsh {Name("minNStrawHits"), Comment("minimum number of straw hits "),2};
     fhicl::Atom<int> minnch {Name("minNComboHits"), Comment("number of combohits allowed"),8};
+    fhicl::Atom<int> minpanels {Name("minPanels"), Comment("minimum number of panels hit"),0};
+    fhicl::Atom<int> minplanes {Name("minPlanes"), Comment("minimum number of planes hit"),0};
     fhicl::Atom<TrkFitFlag> saveflag {Name("SaveTrackFlag"),Comment("if set to OK then save the track"), TrkFitFlag::helixOK};
     fhicl::Atom<int> minNHitsTimeCluster{Name("minNHitsTimeCluster"),Comment("minium allowed time cluster"), 1 };
     fhicl::Atom<art::InputTag> chToken{Name("ComboHitCollection"),Comment("tag for combo hit collection")};
@@ -91,6 +93,9 @@ public:
     fhicl::Atom<bool> UseTime{Name("UseTime"),Comment("use time for drift fit")};
     fhicl::Atom<double> mnTolerance{Name("MinuitTolerance"),Comment("Tolerance for minuit convergence"),0.1};
     fhicl::Atom<double> mnPrecision{Name("MinuitPrecision"),Comment("Effective precision for likelihood function"),-1};
+    fhicl::Atom<int> maxlayerswaps{Name("MaxLayerSwaps"),Comment("Max times track can cross layers"),1};
+    fhicl::Atom<int> samelayergaplimit{Name("SameLayerGapLimit"),Comment("Max gap between same layers"),4};
+    fhicl::Atom<int> crosslayergaplimit{Name("CrossLayerGapLimit"),Comment("Max gap between different layers"),10};
     fhicl::Table<CosmicTrackFit::Config> tfit{Name("CosmicTrackFit"), Comment("fit")};
 	};
 	typedef art::EDProducer::Table<Config> Parameters;
@@ -109,6 +114,8 @@ public:
 	int 				_debug;
 	int 				_minnsh; // minimum # of strawHits in CH
 	int 				_minnch; // minimum # of ComboHits for viable fit
+        int _minpanels;
+        int _minplanes;
 	TrkFitFlag	_saveflag;//write tracks that satisfy these flags
 	int 				_minNHitsTimeCluster; //min number of hits in a time cluster
 	//float				_max_seed_chi2; ///maximum chi2 allowed for seed
@@ -124,6 +131,9 @@ public:
         bool       _UseTime;
         double _mnTolerance;
         double _mnPrecision;
+        int _maxlayerswaps;
+        int _samelayergaplimit;
+        int _crosslayergaplimit;
 
 	CosmicTrackFit     _tfit;
 
@@ -132,6 +142,7 @@ public:
 
   void     OrderHitsY(ComboHitCollection const&chcol, std::vector<StrawHitIndex> const&inputIdx, std::vector<StrawHitIndex> &outputIdxs);
   int      goodHitsTimeCluster(const TimeCluster &TCluster, ComboHitCollection const& chcol);
+  bool     has_shower(const TimeCluster &tclust, ComboHitCollection const& chcol);
 
 };
     CosmicTrackFinder::CosmicTrackFinder(const Parameters& conf) :
@@ -139,6 +150,8 @@ public:
       _debug  (conf().debug()),
       _minnsh   (conf().minnsh()),
       _minnch  (conf().minnch()),
+      _minpanels (conf().minpanels()),
+      _minplanes (conf().minplanes()),
       _saveflag  (conf().saveflag()),
       _minNHitsTimeCluster(conf().minNHitsTimeCluster()),
       _chToken (conf().chToken()),
@@ -150,6 +163,9 @@ public:
       _UseTime (conf().UseTime()),
       _mnTolerance (conf().mnTolerance()),
       _mnPrecision (conf().mnPrecision()),
+      _maxlayerswaps (conf().maxlayerswaps()),
+      _samelayergaplimit (conf().samelayergaplimit()),
+      _crosslayergaplimit (conf().crosslayergaplimit()),
       _tfit (conf().tfit())
     {
       consumes<ComboHitCollection>(_chToken);
@@ -200,6 +216,20 @@ public:
           std::cout<<"CosmicTrackFinder: time clusters " << _iev << std::endl;
         }
 
+        std::vector<uint16_t> panels, planes;
+        for(size_t ich = 0;ich < tclust.hits().size(); ++ich){
+          ComboHit const& chit = chcol[tclust.hits()[ich]];
+          uint16_t panelid = chit.strawId().uniquePanel();
+          if (std::find(panels.begin(),panels.end(),panelid) == panels.end())
+            panels.push_back(panelid);
+          uint16_t planeid = chit.strawId().plane();
+          if (std::find(planes.begin(),planes.end(),planeid) == planes.end())
+            planes.push_back(planeid);
+        }
+        int n_panels = panels.size();
+        int n_planes = planes.size();
+
+
         std::vector<StrawHitIndex> panelHitIdxs;
         OrderHitsY(chcol,tclust.hits(),panelHitIdxs);
 
@@ -217,6 +247,10 @@ public:
 
         if (nFiltComboHits < _minnch ) {	continue; }
         if (nFiltStrawHits < _minnsh) { continue; }
+        if (n_panels < _minpanels) { continue; }
+        if (n_planes < _minplanes) { continue; }
+
+        if (has_shower(tclust,chcol)){ continue; }
 
 
         ostringstream title;
@@ -251,7 +285,7 @@ public:
         }
 
         if (_UseChiFit){
-          _tfit.BeginFit(title.str().c_str(), tseed, event, chcol, panelHitIdxs);
+          _tfit.Chi2Fit(title.str().c_str(), tseed, event, chcol, panelHitIdxs);
 
           if( _tfit.goodTrack(tseed._track) == false){
             tseed._status.clear(TrkFitFlag::helixConverged);
@@ -284,6 +318,11 @@ public:
               // tseed._straw_chits = tmpHits;
               // if (tmpHits.size() == 0)
               //   continue;
+            }else{
+              tseed._track.MinuitParams = tseed._track.FitParams;
+              tseed._track.MinuitCoordSystem = tseed._track.FitCoordSystem;
+              tseed._track.MinuitEquation = tseed._track.FitEquation;
+              tseed._track.MinuitParams.cov = std::vector<double>(15, 0);
             }
 
             CosmicTrackSeedCollection* col = seed_col.get();
@@ -328,6 +367,46 @@ public:
 
     return ngoodhits;
   }
+
+  bool CosmicTrackFinder::has_shower(TimeCluster const& tclust, ComboHitCollection const& chcol){
+    std::vector<int> straws;
+    for (size_t i=0;i<tclust.nhits();i++){
+      straws.push_back(chcol.at(tclust.hits().at(i)).strawId().straw());
+    }
+    std::sort(straws.begin(),straws.end());
+    int swapcounter = 0;
+    int maxsamelayergap = 0;
+    int maxcrosslayergap = 0;
+    int prevlayer = -1;
+    int prevstraw = -1;
+    for (size_t i=0;i<straws.size();i++){
+      int thisstraw = straws[i];
+      int thislayer = straws[i] % 2;
+      if (i != 0){
+        if (thislayer == prevlayer){
+          int gap = (thisstraw - prevstraw-2)/2;
+          if (gap > maxsamelayergap)
+            maxsamelayergap = gap;
+        }else{
+          swapcounter += 1;
+          int gap = (thisstraw-prevstraw-1)/2;
+          if (gap > maxcrosslayergap)
+            maxcrosslayergap = gap;
+        }
+      }
+      prevlayer = thislayer;
+      prevstraw = thisstraw;
+    }
+    if (swapcounter > _maxlayerswaps)
+      return true;
+    if (maxsamelayergap > _samelayergaplimit)
+      return true;
+    if (maxcrosslayergap > _crosslayergaplimit)
+      return true;
+    return false;
+  }
+
+
 
 }
 using mu2e::CosmicTrackFinder;

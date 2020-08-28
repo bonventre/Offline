@@ -157,50 +157,59 @@ XYZVec ConvertToPrimePoint(ComboHit* chit, TrackAxes axes){
 //--------------------------- ----------------------------*/
 
 //This function takes charge of the error calculation and calls the others, The list is such that it is consistant with axes so: "0" = X'', "1" = Y'' (and of course not used but "2" =Z'.)//
-std::vector<double> GetErrors(ComboHit* Hit, XYZVec XAxis, XYZVec YAxis){
+std::vector<double> GetErrors(ComboHit const &Hit, XYZVec XAxis, XYZVec YAxis){
 	XYZVec major_axis =  MajorAxis(Hit);
         XYZVec minor_axis =  MinorAxis(Hit);
-        double errX =  HitErrorX(Hit, major_axis, minor_axis, XAxis);
-        double errY =  HitErrorY(Hit, major_axis, minor_axis, YAxis);
+        double errX =  HitErrorX(major_axis, minor_axis, XAxis);
+        double errY =  HitErrorY(major_axis, minor_axis, YAxis);
         std::vector<double> ErrorsXY;
         ErrorsXY.push_back(errX);
         ErrorsXY.push_back(errY);
+        ErrorsXY[0] = HitErrorDir(Hit,XAxis);
+        ErrorsXY[1] = HitErrorDir(Hit,YAxis);
         return ErrorsXY;
 
 }
-XYZVec MajorAxis(ComboHit* Hit){
-      XYZVec const& wdir = Hit->wdir();//direction along wire
-      double werr_mag = Hit->wireRes(); //hit major error axis  
+
+double HitErrorDir(ComboHit const& Hit, XYZVec direction){
+  double dirDotWire = direction.Dot(Hit.wdir());
+  double dirDotTransverse = sqrt(1-pow(dirDotWire,2));
+  return sqrt(pow(Hit.wireRes()*dirDotWire,2) + pow(Hit.transRes()*dirDotTransverse,2));
+}
+
+XYZVec MajorAxis(ComboHit const& Hit){
+      XYZVec const& wdir = Hit.wdir();//direction along wire
+      double werr_mag = Hit.wireRes(); //hit major error axis  
       XYZVec major_axis = werr_mag*wdir;
       return major_axis;
 }
 
-XYZVec MinorAxis(ComboHit* Hit){
-      XYZVec const& wdir = Hit->wdir();//direction along wire
+XYZVec MinorAxis(ComboHit const& Hit){
+      XYZVec const& wdir = Hit.wdir();//direction along wire
       XYZVec wtdir = Geom::ZDir().Cross(wdir); // transverse direction to the wire 
-      double terr_mag = Hit->transRes(); //hit minor error axis
+      double terr_mag = Hit.transRes(); //hit minor error axis
       XYZVec minor_axis = terr_mag*wtdir;
       return minor_axis;
 }
 
 
-double HitErrorX(ComboHit* Hit, XYZVec major_axis, XYZVec minor_axis, XYZVec XPrime){
+double HitErrorX(XYZVec major_axis, XYZVec minor_axis, XYZVec XPrime){
         double sigma_w_squared = major_axis.Mag2();      
         double sigma_v_squared = minor_axis.Mag2();
 	double sigma_x_track = sqrt(sigma_w_squared*pow(XPrime.Dot(major_axis.Unit()),2)+sigma_v_squared*pow(XPrime.Dot(minor_axis.Unit()),2));
  	return sigma_x_track;
 }
  
-double HitErrorY(ComboHit* Hit, XYZVec major_axis, XYZVec minor_axis, XYZVec YPrime){
+double HitErrorY(XYZVec major_axis, XYZVec minor_axis, XYZVec YPrime){
         double sigma_w_squared = major_axis.Mag2();
         double sigma_v_squared = minor_axis.Mag2();
 	double sigma_y_track = sqrt(sigma_w_squared*pow((YPrime.Dot(major_axis.Unit())),2)+sigma_v_squared*pow((YPrime.Dot(minor_axis.Unit())),2));
  	return sigma_y_track;
 }
 
-double TotalHitError(ComboHit* Hit, XYZVec major_axis, XYZVec minor_axis, XYZVec XPrime, XYZVec YPrime){
-	double errX =  ParametricFit::HitErrorX(Hit, major_axis, minor_axis, XPrime);
-        double errY =  ParametricFit::HitErrorY(Hit, major_axis, minor_axis, YPrime);
+double TotalHitError(XYZVec major_axis, XYZVec minor_axis, XYZVec XPrime, XYZVec YPrime){
+	double errX =  ParametricFit::HitErrorX(major_axis, minor_axis, XPrime);
+        double errY =  ParametricFit::HitErrorY(major_axis, minor_axis, YPrime);
         return sqrt(pow(errX,2)+pow(errY,2));
 
 }
@@ -211,8 +220,9 @@ Can build 3 matrices for x' and 3 for y'. See documentation for details but alph
 ----------------------------------------------------------------*/
 double GetHitChi2(double A0, double A1, double errorX, XYZVec point, XYZVec XDoublePrime, XYZVec ZPrime){
 	double chi_i = ((A0*A0))+((A1*A1))*pow(point.Dot(ZPrime),2)+pow(point.Dot(XDoublePrime),2)-2*A0*point.Dot(XDoublePrime)+2*A0*A1*point.Dot(ZPrime)-2*A1*point.Dot(ZPrime)*point.Dot(XDoublePrime);
-	double chi2_i = (chi_i*chi_i)/(errorX*errorX);
-	return chi2_i;
+        return chi_i/(errorX*errorX);
+//	double chi2_i = (chi_i*chi_i)/(errorX*errorX);
+//	return chi2_i;
 
 }
 
