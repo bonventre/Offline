@@ -83,7 +83,7 @@ namespace mu2e
       Float_t _mcwt[2];
       Double_t _mcsptime;
       Double_t _mcptime;
-      Int_t _esel,_rsel, _tsel,  _bkgclust, _bkg, _stereo, _tdiv, _isolated, _strawxtalk, _elecxtalk, _calosel;
+      Int_t _esel,_rsel, _tsel,  _bkgclust, _bkg, _stereo, _tdiv, _isolated, _strawxtalk, _elecxtalk, _calosel, _dead;
       Int_t _sid, _plane, _panel, _layer, _straw;
       Float_t _shwres, _shtres;
       Bool_t _mcxtalk;
@@ -187,6 +187,7 @@ namespace mu2e
     _shdiag->Branch("tsel",&_tsel,"tsel/I");
     _shdiag->Branch("bkgclust",&_bkgclust,"bkgclust/I");
     _shdiag->Branch("bkg",&_bkg,"bkg/I");
+    _shdiag->Branch("dead",&_dead,"dead/I");
     _shdiag->Branch("stereo",&_stereo,"stereo/I");
     _shdiag->Branch("tdiv",&_tdiv,"tdiv/I");
     _shdiag->Branch("strawxtalk",&_strawxtalk,"strawxtalk/I");
@@ -273,6 +274,7 @@ namespace mu2e
       _isolated = shf.hasAllProperties(StrawHitFlag::isolated);
       _bkg = shf.hasAllProperties(StrawHitFlag::bkg);
       _bkgclust = shf.hasAllProperties(StrawHitFlag::bkgclust);
+      _dead = shf.hasAllProperties(StrawHitFlag::dead);
       _rho = ch.posCLHEP().perp();
       // summarize the MC truth for this strawhit.  Preset the values in case MC is missing/incomplete
       _mcgid = -1;
