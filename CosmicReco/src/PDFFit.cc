@@ -59,7 +59,10 @@ FullDriftFit::FullDriftFit(ComboHitCollection const& _chits, StrawResponse const
                            CosmicTrack const& _track, std::vector<double> const& _constraint_means,
                            std::vector<double> const& _constraints, double const& _sigma_t,
                            int const& _k, const Tracker* _tracker) :
-    GaussianPDFFit(_chits, _srep, _track, _constraint_means, _constraints, _sigma_t, _k, _tracker) {
+  chits(_chits),
+  srep(_srep), track(_track), constraint_means(_constraint_means), constraints(_constraints),
+  sigma_t(_sigma_t), k(_k), tracker(_tracker) {
+
   pdf_times = new double[N_tbins];
   pdf_taus = new double[N_taubins];
   pdf_sigmas = new double[N_sbins];
@@ -135,8 +138,7 @@ void FullDriftFit::CalculateFullPDF() {
   }
 }
 
-void FullDriftFit::DeleteArrays() const {
-
+FullDriftFit::~FullDriftFit() {
   delete[] pdf_sigmas;
   delete[] pdf_taus;
   delete[] pdf_times;
@@ -207,52 +209,17 @@ double FullDriftFit::InterpolatePDF(double const& time_residual, double const& s
 }
 
 // This 3 functions talk to the drift util:
-double GaussianPDFFit::calculate_DOCA(ComboHit const& chit, double const& a0, double const& a1,
+double FullDriftFit::calculate_DOCA(ComboHit const& chit, double const& a0, double const& a1,
                                       double const& b0, double const& b1,
                                       const Tracker* tracker) const {
   double doca = DriftFitUtils::GetTestDOCA(chit, a0, a1, b0, b1, tracker);
   return (doca);
 }
 
-double GaussianPDFFit::calculate_ambig(ComboHit const& chit, double const& a0, double const& a1,
-                                       double const& b0, double const& b1,
-                                       const Tracker* tracker) const {
-  double ambig = DriftFitUtils::GetAmbig(chit, a0, a1, b0, b1, tracker);
-  return (ambig);
-}
-
-double GaussianPDFFit::TimeResidual(double const& doca, StrawResponse const& srep, double const& t0,
+double FullDriftFit::TimeResidual(double const& doca, StrawResponse const& srep, double const& t0,
                                     ComboHit const& hit, const Tracker* tracker) const {
   double tres = DriftFitUtils::TimeResidual(doca, srep, t0, hit, tracker);
   return (tres);
-}
-
-double GaussianPDFFit::operator()(const std::vector<double>& x) const {
-
-  double const& a0 = x[0];
-  double const& a1 = x[1];
-  double const& b0 = x[2];
-  double const& b1 = x[3];
-  double t0 = x[4];
-  long double llike = 0;
-
-  for (size_t i = 0; i < this->chits.size(); i++) {
-    double doca = calculate_DOCA(this->chits[i], a0, a1, b0, b1, this->tracker);
-    double time_residual = this->TimeResidual(doca, this->srep, t0, this->chits[i], this->tracker);
-    double pdf_t = 1 / sqrt(2 * TMath::Pi() * this->sigma_t * this->sigma_t) *
-                   exp(-(time_residual * time_residual) / (2 * this->sigma_t * this->sigma_t));
-
-    llike -= log(pdf_t);
-    t0 += time_residual / this->chits.size();
-  }
-
-  for (int i = 0; i < this->nparams; i++) {
-    if (this->constraints[i] > 0) {
-      llike += pow((x[i] - this->constraint_means[i]) / this->constraints[i], 2);
-    }
-  }
-
-  return (double)llike;
 }
 
 double FullDriftFit::operator()(const std::vector<double>& x) const {
@@ -497,3 +464,82 @@ double GaussianDriftFit::DOCAresidualError(ComboHit const& sh, const std::vector
 
   return sqrt(residerror);
 }
+
+double SimpleDriftFit::operator()(const std::vector<double>& x) const {
+  double const&a0 = x[0];
+  double const&b0 = x[1];
+  double const&a1 = x[2];
+  double const&b1 = x[3];
+  long double llike = 0;
+
+  CLHEP::Hep3Vector intercept(a0, 0, b0);
+  CLHEP::Hep3Vector dir(a1, -1, b1);
+  dir = dir.unit();
+  std::vector<double> times;
+  double average_time = 0;
+
+  for (size_t i = 0; i < this->shs.size(); i++) {
+    if (excludeHit == (int)i){
+      continue;
+    }
+    Straw const& straw = tracker->getStraw(this->shs[i].strawId());
+    TwoLinePCA pca(intercept, dir, straw.getMidPoint(), straw.getDirection());
+
+    double longdist = (pca.point2() - straw.getMidPoint()).dot(straw.getDirection());
+    double longres = srep.wpRes(this->shs[i].energyDep() * 1000., fabs(longdist));
+
+    llike += pow(longdist - this->shs[i].wireDist(), 2) / pow(longres, 2);
+
+    double drift_time = srep.driftDistanceToTime(this->shs[i].strawId(), pca.dca(), 0) + 
+              srep.driftTimeOffset(this->shs[i].strawId(), 0, 0, pca.dca());
+
+    double traj_time = ((pca.point1() - intercept).dot(dir)) / 299.9;
+    double hit_t0 = this->shs[i].time() - this->shs[i].propTime() - traj_time - drift_time;
+    times.push_back(hit_t0);
+    average_time += hit_t0;
+  }
+
+  average_time /= (int) times.size();
+  for (size_t i=0;i<times.size();i++){
+    llike += pow((average_time - times[i]) / this->drift_res, 2);
+    //std::cout << "  " << this->shs[i].strawId() << " " << pca.dca() << " " << t0 - hit_t0 << " " << longdist << " " << this->shs[i].wireDist() << " " <<  pow(longdist - this->shs[i].wireDist(), 2) / pow(longres, 2) << std::endl;
+  }
+    //std::cout << x[0] << " " << x[1] << " " << x[2] << " " << x[3] << " " << x[4] << "  =>  " <<
+    //llike << " " << this->origin << std::endl;
+
+  return (double)llike;
+}
+
+double SimpleDriftFit::t0(const std::vector<double>& x) const {
+  double const&a0 = x[0];
+  double const&b0 = x[1];
+  double const&a1 = x[2];
+  double const&b1 = x[3];
+
+  CLHEP::Hep3Vector intercept(a0, 0, b0);
+  CLHEP::Hep3Vector dir(a1, -1, b1);
+  dir = dir.unit();
+  std::vector<double> times;
+  double average_time = 0;
+
+  for (size_t i = 0; i < this->shs.size(); i++) {
+    if (excludeHit == (int)i){
+      continue;
+    }
+    Straw const& straw = tracker->getStraw(this->shs[i].strawId());
+    TwoLinePCA pca(intercept, dir, straw.getMidPoint(), straw.getDirection());
+
+    double drift_time = srep.driftDistanceToTime(this->shs[i].strawId(), pca.dca(), 0) + 
+              srep.driftTimeOffset(this->shs[i].strawId(), 0, 0, pca.dca());
+
+    double traj_time = ((pca.point1() - intercept).dot(dir)) / 299.9;
+    double hit_t0 = this->shs[i].time() - this->shs[i].propTime() - traj_time - drift_time;
+    times.push_back(hit_t0);
+    average_time += hit_t0;
+  }
+
+  average_time /= (int) times.size();
+  return average_time;
+}
+
+

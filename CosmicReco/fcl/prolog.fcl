@@ -80,14 +80,7 @@ CosmicTrackFinderLoose : {
         UseTime : false
         UseLineFinder : false
 	CosmicTrackFit :{
-		minNComboHits : 4
-		MaxSeedChi2DOF : 10
-		MaxDeltaChi2 : 0.5
-		MaxPosDev : 20000
-		MaxHitPullForSeed : 1000
 		Noutliers : 2
-		GaussianSeedTimeResolution : 24
-		MaxTimeResidual : 40
 	}
    
 }
@@ -100,14 +93,7 @@ CosmicTrackFinderTight : {
         UseTime : false
         UseLineFinder : false
 	CosmicTrackFit :{
-		minNComboHits : 8
-		MaxSeedChi2DOF : 2.5
-		MaxDeltaChi2 : 0.001
-		MaxPosDev : 200
-		MaxHitPullForSeed : 100
 		Noutliers : 2
-		GaussianSeedTimeResolution : 24
-		MaxTimeResidual : 40
 	}
 }
 

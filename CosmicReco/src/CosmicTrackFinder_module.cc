@@ -96,6 +96,7 @@ public:
     fhicl::Atom<int> maxlayerswaps{Name("MaxLayerSwaps"),Comment("Max times track can cross layers"),1};
     fhicl::Atom<int> samelayergaplimit{Name("SameLayerGapLimit"),Comment("Max gap between same layers"),4};
     fhicl::Atom<int> crosslayergaplimit{Name("CrossLayerGapLimit"),Comment("Max gap between different layers"),10};
+    fhicl::Atom<double> simpleTres{Name("SimpleFitDriftResolution"),Comment("The resolution of the simple drift fit tresid (ns)"), 10 };
     fhicl::Table<CosmicTrackFit::Config> tfit{Name("CosmicTrackFit"), Comment("fit")};
 	};
 	typedef art::EDProducer::Table<Config> Parameters;
@@ -134,6 +135,7 @@ public:
         int _maxlayerswaps;
         int _samelayergaplimit;
         int _crosslayergaplimit;
+        double _simpleTres;
 
 	CosmicTrackFit     _tfit;
 
@@ -166,6 +168,7 @@ public:
       _maxlayerswaps (conf().maxlayerswaps()),
       _samelayergaplimit (conf().samelayergaplimit()),
       _crosslayergaplimit (conf().crosslayergaplimit()),
+      _simpleTres (conf().simpleTres()),
       _tfit (conf().tfit())
     {
       consumes<ComboHitCollection>(_chToken);
@@ -301,7 +304,7 @@ public:
               if (_UseTime) {
                 MinuitDriftFitter::DoDriftTimeFit(_debug,tseed, srep, &tracker, _mnTolerance, _mnPrecision );
               } else {
-                _tfit.DriftFit(tseed, srep);
+                MinuitDriftFitter::DoSimpleDriftFit(_debug,tseed, srep, &tracker, _simpleTres, _mnTolerance, _mnPrecision );
               }
 
               if( !tseed._track.minuit_converged ){

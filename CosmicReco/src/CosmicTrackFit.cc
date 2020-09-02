@@ -67,23 +67,10 @@ struct ycomp : public std::binary_function<XYZVec,XYZVec,bool> {
 namespace mu2e
 {
     CosmicTrackFit::CosmicTrackFit(const Config& conf) :
-	_Npara (conf.Npara()),
-	_diag (conf.diag()),
-	_debug  (conf.debug()),
 	_dontuseflag (conf.dontuseflag()),
 	_minnsh   (conf.minnsh()),
-	_minnch  (conf.minnch()),
-	_n_outliers (conf.n_outliers()),
 	_maxniter (conf.maxniter()),
-	_max_seed_chi2 (conf.max_seed_chi2()),
-	_max_chi2_change (conf.max_chi2_change()),
-	_max_position_deviation (conf.max_position_deviation()),
-	_maxHitDOCA (conf.maxHitDOCA()),
-	_maxLogL (conf.maxLogL()),
-	_gaussTres (conf.gaussTres()),
-	_maxTres (conf.maxTres()),
 	_maxd (conf.maxd()),
-	_maxpull (conf.maxpull()),
         _useTSeedDirection (conf.UseTSeedDirection())
 	{}
 
@@ -269,54 +256,6 @@ TrackEquation CosmicTrackFit::ConvertFitToDetectorFrame(TrackAxes axes, XYZVec P
     bool CosmicTrackFit::use_track(double track_length) const 
     {
 	return (track_length > _maxd) ? false : true ;
-    }
-
-    void CosmicTrackFit::DriftFit(CosmicTrackSeed& tseed, StrawResponse const& _srep ){
-
-      FitResult endresult = MinuitDriftFitter::DoFit(_diag, tseed, _srep, _tracker, _maxHitDOCA, _minnch, _maxLogL, _gaussTres, _maxTres);
-
-      tseed._track.MinuitParams.A0 =  endresult.bestfit[0];//a0
-      tseed._track.MinuitParams.A1 =  endresult.bestfit[1];//a1
-      tseed._track.MinuitParams.B0 =  endresult.bestfit[2];//b0
-      tseed._track.MinuitParams.B1 =  endresult.bestfit[3];//b1
-      tseed._track.MinuitParams.T0 =  endresult.bestfit[4];//t0
-
-      tseed._track.MinuitParams.deltaA0 =  endresult.bestfiterrors[0];//erra0
-      tseed._track.MinuitParams.deltaA1 =  endresult.bestfiterrors[1];//erra1
-      tseed._track.MinuitParams.deltaB0 =  endresult.bestfiterrors[2];//errb0
-      tseed._track.MinuitParams.deltaB1 =  endresult.bestfiterrors[3];//errb1
-      tseed._track.MinuitParams.deltaT0 =  endresult.bestfiterrors[4];//errt0
-
-      if(endresult.bestfitcov.size() !=0 ){
-        TrackCov Cov(endresult.bestfitcov[0], 0., 0., endresult.bestfitcov[1], endresult.bestfitcov[2],0.,0., endresult.bestfitcov[3]);
-        tseed._track.MinuitParams.Covarience = Cov;
-      }
-      if(endresult.NLL !=0){ tseed._track.minuit_converged = true; }
-
-      XYZVec X(1,0,0);
-      XYZVec Y(0,1,0);
-      XYZVec Z(0,0,1);
-
-      TrackAxes XYZ(X,Y,Z);
-      tseed._track.MinuitCoordSystem = XYZ; 
-      tseed._track.MinuitEquation.Pos = XYZVec(tseed._track.MinuitParams.A0,tseed._track.MinuitParams.B0,0);
-      tseed._track.MinuitEquation.Dir = XYZVec(tseed._track.MinuitParams.A1,tseed._track.MinuitParams.B1,1);
-
-      unsigned int n_outliers = 0;
-      if(endresult.FullFitEndTimeResiduals.size() >0){
-        for(unsigned i = 0; i< endresult.FullFitEndTimeResiduals.size()-1; i++){
-          if( endresult.FullFitEndTimeResiduals[i] > _maxTres or isnan(endresult.FullFitEndTimeResiduals[i])==true){ 
-            n_outliers +=1;
-            tseed._straw_chits[i]._flag.merge(StrawHitFlag::outlier); 
-
-          }
-        }
-
-      }
-      if( n_outliers  > _n_outliers) {
-        tseed._track.minuit_converged = false;
-      }
-
     }
 
 }//end namespace
