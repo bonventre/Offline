@@ -140,11 +140,11 @@ for i in range(96):
 
 
 fout = open("seed_tracker_timeoffsets.fcl","w")
-fout.write("services.ProditionsService.strawResponse.eDep : [1.0]\n")
-fout.write("services.ProditionsService.strawResponse.halfPropVelocity : [100.0]\n")
+fout.write("services.ProditionsService.strawResponse.eDep : [1.0, 2.0]\n")
+fout.write("services.ProditionsService.strawResponse.halfPropVelocity : [100.0. 100.0]\n")
 fout.write("services.ProditionsService.strawResponse.centralWirePos : 65.0\n")
-fout.write("services.ProditionsService.strawResponse.tdCentralRes : [30.0]\n")
-fout.write("services.ProditionsService.strawResponse.tdResSlope : [0.05]\n")
+fout.write("services.ProditionsService.strawResponse.tdCentralRes : [30.0, 30.0]\n")
+fout.write("services.ProditionsService.strawResponse.tdResSlope : [0.05, 0.05]\n")
 fout.write("services.ProditionsService.strawResponse.timeOffsetStrawCal : [")
 for i in range(len(timeOffsetCal)):
   fout.write(" %f" % timeOffsetCal[i])

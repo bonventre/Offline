@@ -671,7 +671,7 @@ bool AlignTrackCollector::filter_CosmicTrackSeedCollection(
         std::vector<double> cov;
         bool converged;
 
-        MinuitDriftFitter::DoDriftTimeFit(
+        MinuitDriftFitter::RunMigrad(
           pars, errors, cov, converged, fit_object);
 
         // update track variable

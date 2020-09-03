@@ -144,6 +144,7 @@ class SimpleDriftFit : public ROOT::Minuit2::FCNBase {
       excludeHit = hitIdx;
     }
     double t0(const std::vector<double>& x) const;
+    void hitParameters(ComboHit const& sh, const std::vector<double>& x, double &long_dist, double &doca, double &tresid) const;
 };
 
 
