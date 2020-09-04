@@ -121,6 +121,8 @@ public:
 
   double DOCAresidualError(ComboHit const& sh, const std::vector<double>& x,
                            const std::vector<double>& cov) const;
+
+  void hitParameters(ComboHit const& sh, const std::vector<double>& x, double &long_dist, double &doca, double &tresid) const;
 };
 
 class SimpleDriftFit : public ROOT::Minuit2::FCNBase {

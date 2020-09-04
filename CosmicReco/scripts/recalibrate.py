@@ -19,9 +19,16 @@ fold = open(sys.argv[2])
 lold = fold.readlines()
 old_fcl = {line.split(":")[0].rstrip() : line.split(":")[1].rstrip() for line in lold}
 old_timeOffsetHV = eval(old_fcl["services.ProditionsService.strawResponse.timeOffsetStrawHV"])
+old_timeOffsetCal = eval(old_fcl["services.ProditionsService.strawResponse.timeOffsetStrawCal"])
 
 hresids = ROOT.TH1F("hresids","hresids",96,0,96)
 hpvs = ROOT.TH1F("hpvs","hpvs",96,0,96)
+
+habsresids = ROOT.TProfile("habsresids","habsresids",96,0,96)
+if unbiased:
+  t.Project("habsresids","ubtresid:straw","long != -999 && abs(long) < slen*1.1 && ublong != -999 && abs(ublong) < slen*1.1 && abs(deltat) < 20 && doca < 10 && hitused && ubdoca < 10 && abs(ubtresid) < 100")
+else:
+  t.Project("habsresids","tresid:straw","long != -999 && abs(long) < slen*1.1 && ublong != -999 && abs(ublong) < slen*1.1 && abs(deltat) < 20 && doca < 10 && hitused && ubdoca < 10 && abs(ubtresid) < 100")
 
 perStrawHPV = []
 timeOffsetCal = []
@@ -78,12 +85,19 @@ hpv = 1.0/fr.GetParams()[1]
 #print("timeOffsetStrawHV:",[timeOffsetHV[i] + oldtimehv[i] for i in range(96)])
 
 fout = open(sys.argv[3],"w")
-unchanged_params = ["eDep","halfPropVelocity","centralWirePos","tdCentralRes","tdResSlope","timeOffsetStrawCal"]
+unchanged_params = ["eDep","halfPropVelocity","centralWirePos","tdCentralRes","tdResSlope"]
 for param in unchanged_params:
   fout.write("services.ProditionsService.strawResponse.%s : %s\n" % (param,old_fcl["services.ProditionsService.strawResponse.%s" % param]))
+fout.write("services.ProditionsService.strawResponse.timeOffsetStrawCal : [")
+for i in range(len(timeOffsetCal)):
+  fout.write(" %f" % (timeOffsetCal[i] + old_timeOffsetCal[i] + habsresids.GetBinContent(i+1)))
+  if i != len(timeOffsetCal)-1:
+    fout.write(",")
+  else:
+    fout.write("]\n")
 fout.write("services.ProditionsService.strawResponse.timeOffsetStrawHV : [")
 for i in range(len(timeOffsetHV)):
-  fout.write(" %f" % (timeOffsetHV[i] + old_timeOffsetHV[i]))
+  fout.write(" %f" % (timeOffsetHV[i] + old_timeOffsetHV[i] + habsresids.GetBinContent(i+1)))
   if i != len(timeOffsetHV)-1:
     fout.write(",")
   else:
@@ -100,5 +114,12 @@ c1 = ROOT.TCanvas("c1","c1",600,600)
 hresids.Draw()
 #c2 = ROOT.TCanvas("c2","c2",600,600)
 #hpvs.Draw()
+c3 = ROOT.TCanvas("c3","c3",600,600)
+if unbiased:
+  t.Draw("ubtresid","long != -999 && abs(long) < slen*1.1 && ublong != -999 && abs(ublong) < slen*1.1 && abs(deltat) < 20 && doca < 10 && hitused && ubdoca < 10 && abs(ubtresid) < 100")
+else:
+  t.Draw("tresid","long != -999 && abs(long) < slen*1.1 && ublong != -999 && abs(ublong) < slen*1.1 && abs(deltat) < 20 && doca < 10 && hitused && ubdoca < 10 && abs(ubtresid) < 100")
+c4 = ROOT.TCanvas("c4","c4",600,600)
+habsresids.Draw()
 
 input()

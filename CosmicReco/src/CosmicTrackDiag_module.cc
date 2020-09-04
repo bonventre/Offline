@@ -68,6 +68,7 @@ namespace mu2e
         fhicl::Atom<bool> mcdiag{Name("mcdiag"), Comment("set on for MC info"),true};
         fhicl::Atom<bool> simpleubresids{Name("SimpleUnbiasedResids"),Comment("Calculate unbiased residuals"),false}; 
         fhicl::Atom<double> driftRes{Name("SimpleDriftRes"),Comment("Drift resolution for simpledriftfit"),10};
+        fhicl::Atom<bool> ubresids{Name("UnbiasedResids"),Comment("Calculate unbiased residuals"),false}; 
         fhicl::Atom<art::InputTag> chtag{Name("ComboHitCollection"),Comment("tag for single straw hit level combo hit collection")};
         fhicl::Atom<art::InputTag> shtag{Name("StrawHitCollection"),Comment("StrawHit collection tag"),"makeSH"};
         fhicl::Atom<art::InputTag> tctag{Name("TimeClusterCollection"),Comment("tag for time cluster collection")};
@@ -92,6 +93,7 @@ namespace mu2e
       bool _mcdiag;
       bool _simpleubresids;
       double _driftRes;
+      bool _ubresids;
       std::ofstream outputfile;
       art::InputTag   _chtag;//combo
       art::InputTag   _shtag; 
@@ -163,6 +165,7 @@ namespace mu2e
     _mcdiag (conf().mcdiag()),
     _simpleubresids (conf().simpleubresids()),
     _driftRes (conf().driftRes()),
+    _ubresids (conf().ubresids()),
     _chtag (conf().chtag()),
     _shtag (conf().shtag()),
     _tctag (conf().tctag()),
@@ -260,7 +263,7 @@ namespace mu2e
       _hitT->Branch("slen",&_hitslen,"slen/F");
       _hitT->Branch("deltat",&_hitdeltat,"hitdeltat/F");
 
-      if (_simpleubresids){
+      if (_simpleubresids || _ubresids){
         _hitT->Branch("ubtresid",&_hitubtresid,"ubtresid/F");
         _hitT->Branch("ubtresidrms",&_hitubtresidrms,"ubtresidrms/F");
         _hitT->Branch("ublong",&_hitublong,"ublong/F");
@@ -755,6 +758,37 @@ namespace mu2e
             _hitubtresid = -999;
             _hitubtresidrms = -999;
           }
+        }else if (_ubresids && found){
+          GaussianDriftFit gdf2(tseed._straw_chits, srep, tracker);
+          std::vector<double> pars{tseed._track.MinuitParams.A0,
+            tseed._track.MinuitParams.B0,
+            tseed._track.MinuitParams.A1,
+            tseed._track.MinuitParams.B1,
+            tseed._track.MinuitParams.T0};
+          std::vector<double> errors{tseed._track.MinuitParams.deltaA0,
+            tseed._track.MinuitParams.deltaB0,
+            tseed._track.MinuitParams.deltaA1,
+            tseed._track.MinuitParams.deltaB1,
+            tseed._track.MinuitParams.deltaT0};
+          std::vector<double> cov;
+          bool converged;
+
+          gdf2.setExcludeHit((int) found_index);
+          MinuitDriftFitter::RunMigrad(pars, errors, cov, converged, gdf2);
+          if (converged){
+            double ublong, ubdoca, ubtresid;
+            gdf2.hitParameters(sh, pars, ublong,  ubdoca, ubtresid);
+            _hitublong = ublong;
+            _hitubdoca = ubdoca;
+            _hitubtresid = ubtresid;
+            _hitubtresidrms = srep.driftTimeError(sh.strawId(), 0, 0, ubdoca);
+          }else{
+            _hitublong = -999;
+            _hitubdoca = -999;
+            _hitubtresid = -999;
+            _hitubtresidrms = -999;
+          }
+
         }
 
         if (_printlevel > 1){

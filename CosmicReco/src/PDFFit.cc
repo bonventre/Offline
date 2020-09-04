@@ -304,6 +304,31 @@ double GaussianDriftFit::operator()(const std::vector<double>& x) const {
   return (double)llike;
 }
 
+void GaussianDriftFit::hitParameters(ComboHit const& sh, const std::vector<double>& x, double &long_dist, double &doca, double &tresid) const {
+  double const&a0 = x[0];
+  double const&b0 = x[1];
+  double const&a1 = x[2];
+  double const&b1 = x[3];
+  double const&t0 = x[4];
+
+  CLHEP::Hep3Vector intercept(a0, 0, b0);
+  CLHEP::Hep3Vector dir(a1, -1, b1);
+  dir = dir.unit();
+
+  Straw const& straw = tracker->getStraw(sh.strawId());
+  TwoLinePCA pca(intercept, dir, straw.getMidPoint(), straw.getDirection());
+    
+  long_dist = (pca.point2() - straw.getMidPoint()).dot(straw.getDirection());
+  doca = pca.dca();
+
+  double drift_time = srep.driftDistanceToTime(sh.strawId(), pca.dca(), 0) + 
+    srep.driftTimeOffset(sh.strawId(), 0, 0, pca.dca());
+
+  double traj_time = ((pca.point1() - intercept).dot(dir)) / 299.9;
+  double hit_t0 = sh.time() - sh.propTime() - traj_time - drift_time;
+  tresid = t0 - hit_t0;
+}
+
 double GaussianDriftFit::DOCAresidual(ComboHit const& sh, const std::vector<double>& x) const {
   double const& a0 = x[0];
   double const& b0 = x[1];
