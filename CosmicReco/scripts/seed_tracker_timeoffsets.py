@@ -139,24 +139,23 @@ for i in range(96):
   timeOffsetHV.append(total_offsets[i] + center)
 
 
-fout = open("seed_tracker_timeoffsets.fcl","w")
-fout.write("services.ProditionsService.strawResponse.eDep : [1.0, 2.0]\n")
-fout.write("services.ProditionsService.strawResponse.halfPropVelocity : [100.0. 100.0]\n")
-fout.write("services.ProditionsService.strawResponse.centralWirePos : 65.0\n")
-fout.write("services.ProditionsService.strawResponse.tdCentralRes : [30.0, 30.0]\n")
-fout.write("services.ProditionsService.strawResponse.tdResSlope : [0.05, 0.05]\n")
-fout.write("services.ProditionsService.strawResponse.timeOffsetStrawCal : [")
-for i in range(len(timeOffsetCal)):
-  fout.write(" %f" % timeOffsetCal[i])
-  if i != len(timeOffsetCal)-1:
-    fout.write(",")
-  else:
-    fout.write("]\n")
-fout.write("services.ProditionsService.strawResponse.timeOffsetStrawHV : [")
+fout = open("seed_table.txt","w")
+fout.write("TABLE TrkPreampRStraw\n")
+fout.write("# index,delay_hv,delay_cal,threshold_hv,threshold_cal,gain\n")
 for i in range(len(timeOffsetHV)):
-  fout.write(" %f" % timeOffsetHV[i])
-  if i != len(timeOffsetHV)-1:
-    fout.write(",")
-  else:
-    fout.write("]\n")
+  fout.write("%d,%f,%f,0.0,0.0,0.0\n" % (i,timeOffsetHV[i],timeOffsetCal[i]))
+
+# FIXME now write other tables in order to make sure useDb doesn't fail due to run/subrun validity
+fout.write("\n")
+fout.write("TABLE TrkDelayPanel\n")
+for i in range(216):
+  fout.write("%d,0.0\n" % (i))
+fout.write("\n")
+fout.write("TABLE TrkPreampStraw\n")
+for i in range(216*96):
+  fout.write("%d,0.0,0.0,0.0,0.0,0.0\n" % (i))
+fout.write("\n")
+fout.write("TABLE TrkThresholdRStraw\n")
+for i in range(96):
+  fout.write("%d,12.0,12.0\n" % (i))
 fout.close()

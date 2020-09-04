@@ -85,6 +85,16 @@ namespace mu2e {
       _parDriftOffsets.push_back(mean);
       _parDriftRes.push_back(stddev);
     }
+
+    std::vector<double> timeOffsetPanel = _config.timeOffsetPanel();
+    if (_config.timeOffsetPanel().size() == 0)
+      timeOffsetPanel = strawElectronics->timeOffsetPanel();
+    std::vector<double> timeOffsetStrawHV = _config.timeOffsetStrawHV();
+    if (_config.timeOffsetStrawHV().size() == 0)
+      timeOffsetStrawHV = strawElectronics->timeOffsetStrawHV();
+    std::vector<double> timeOffsetStrawCal = _config.timeOffsetStrawCal();
+    if (_config.timeOffsetStrawCal().size() == 0)
+      timeOffsetStrawCal = strawElectronics->timeOffsetStrawCal();
     
     auto ptr = std::make_shared<StrawResponse>(
 	 strawDrift,strawElectronics,strawPhysics,
@@ -99,8 +109,8 @@ namespace mu2e {
 	 _config.maxDriftRadiusResolution(), 
 	 _config.driftRadiusResolutionRadius(), _config.minT0DOCA(), 
 	 _config.t0shift(), _config.peakMinusPedestalEnergyScale(), 
-	 _config.timeOffsetPanel(), _config.timeOffsetStrawHV(), 
-	 _config.timeOffsetStrawCal(), electronicsTimeDelay, 
+	 timeOffsetPanel, timeOffsetStrawHV, 
+	 timeOffsetStrawCal, electronicsTimeDelay, 
 	  gasGain, analognoise, dVdI, vsat, ADCped,
 	 pmpEnergyScaleAvg );
 

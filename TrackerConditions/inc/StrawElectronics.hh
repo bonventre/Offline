@@ -204,6 +204,9 @@ namespace mu2e {
       _timeOffsetStrawHV = timeOffsetStrawHV;
       _timeOffsetStrawCal = timeOffsetStrawCal;
     }
+    std::vector<double> timeOffsetPanel() const { return _timeOffsetPanel; }
+    std::vector<double> timeOffsetStrawHV() const { return _timeOffsetStrawHV; }
+    std::vector<double> timeOffsetStrawCal() const { return _timeOffsetStrawCal; }
 
   private:
     
