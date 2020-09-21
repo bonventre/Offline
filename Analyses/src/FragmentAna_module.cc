@@ -241,7 +241,9 @@ namespace mu2e {
 	  mu2e::StrawId sid(trkData->StrawIndex);
 	  mu2e::TrkTypes::TDCValues   tdc = {trkData->TDC0 , trkData->TDC1};
 	  mu2e::TrkTypes::TOTValues   tot = {trkData->TOT0 , trkData->TOT1};
-	  mu2e::TrkTypes::ADCWaveform adcs  = trkData->Waveform();	
+          // FIXME when trkData format is updated
+//	  mu2e::TrkTypes::ADCWaveform adcs  = trkData->Waveform();	
+	  mu2e::TrkTypes::ADCWaveform adcs;
 	  int sum{0};
 	  unsigned short maxadc{0};
 	  for ( auto adc : adcs ){

@@ -254,37 +254,23 @@ produce( Event & event )
 	mu2e::TrkTypes::TDCValues tdc = {trkData->TDC0 , trkData->TDC1};
 	mu2e::TrkTypes::TOTValues tot = {trkData->TOT0 , trkData->TOT1};
 
-
-	//	///////////////////////////////////////////////////////////////////////////
-	//	// NOTE: Because the tracker code in offline has not been updated to
-	//	// use 15 samples, it is necessary to add an extra sample in order to
-	//	// initialize an ADCWaveform that can be passed to the StrawDigi
-	//	// constructor. This means that the digis produced by StrawAndCaloDigisFromFragments
-	//	// will differ from those processed in offline so the filter performance
-	//	// will be different. This is only temporary.
-	//	std::array<adc_t,15> const & shortWaveform = cc.DBT_Waveform(pos);
-	//	mu2e::TrkTypes::ADCWaveform wf;
-	//	for(size_t i=0; i<15; i++) {
-	//	  wf[i] = shortWaveform[i];
-	//	}
-	//	wf[15] = 0;
-	//	///////////////////////////////////////////////////////////////////////////
-
-
-	mu2e::TrkTypes::ADCWaveform wf = trkData->Waveform();	
+        //FIXME need to add back in when trkData format is updated
+	//mu2e::TrkTypes::ADCWaveform wf = trkData->Waveform();
+	mu2e::TrkTypes::ADCWaveform wf;	
 
 	// Fill the StrawDigiCollection
-	straw_digis->emplace_back(sid, tdc, tot, wf);
+	straw_digis->emplace_back(sid, tdc, tot, (mu2e::TrkTypes::ADCValue) 0);
 
 	if( diagLevel_ > 1 ) {
   	  std::cout << "MAKEDIGI: " << sid.asUint16() << " " << tdc[0] << " " << tdc[1] << " "
 		    << tot[0] << " " << tot[1] << " ";
-	  for(size_t i=0; i<mu2e::TrkTypes::NADC; i++) {
-	    std::cout << wf[i];
-	    if(i<mu2e::TrkTypes::NADC-1) {
-	      std::cout << " ";
-	    }
-	  }
+          //FIXME need to add back in when trkData format is updated
+	  // for(size_t i=0; i<mu2e::TrkTypes::NADC; i++) {
+	  //  std::cout << wf[i];
+	  //  if(i<mu2e::TrkTypes::NADC-1) {
+	  //    std::cout << " ";
+	  //  }
+	  // }
 	  std::cout << std::endl;
 	  	  
 	  for(int i=hexShiftPrint; i>=0; i--) {
@@ -298,14 +284,15 @@ produce( Event & event )
 	  std::cout << "TDC1: " << tdc[1] << std::endl;
 	  std::cout << "TOT0: " << tot[0] << std::endl;
 	  std::cout << "TOT1: " << tot[1] << std::endl;
-	  std::cout << "Waveform: {";
-	  for(size_t i=0; i<mu2e::TrkTypes::NADC; i++) {
-	    std::cout << wf[i];
-	    if(i<mu2e::TrkTypes::NADC-1) {
-	      std::cout << ",";
-	    }
-	  }
-	  std::cout << "}" << std::endl;
+          //FIXME need to add back in when trkData format is updated
+	  // std::cout << "Waveform: {";
+	  // for(size_t i=0; i<mu2e::TrkTypes::NADC; i++) {
+	  //  std::cout << wf[i];
+	  //  if(i<mu2e::TrkTypes::NADC-1) {
+	  //    std::cout << ",";
+	  //  }
+	  //}
+	  //std::cout << "}" << std::endl;
 
 	  std::cout << "FPGA Flags: ";
 	  for(size_t i=8; i<16; i++) {
@@ -328,12 +315,13 @@ produce( Event & event )
 	  std::cout << tot[0] << " ";
 	  std::cout << tot[1] << " ";
 	  std::cout << wf.size() << " ";
-	  for(size_t i=0; i<mu2e::TrkTypes::NADC; i++) {
-	    std::cout << wf[i];
-	    if(i<mu2e::TrkTypes::NADC-1) {
-	      std::cout << " ";
-	    }
-	  }
+          //FIXME need to add back in when trkData format is updated
+	  //for(size_t i=0; i<mu2e::TrkTypes::NADC; i++) {
+	  //  std::cout << wf[i];
+	  //  if(i<mu2e::TrkTypes::NADC-1) {
+	  //    std::cout << " ";
+	  //  }
+	  //}
 	  std::cout << std::endl;
 	} // End debug output
 

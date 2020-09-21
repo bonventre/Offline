@@ -95,8 +95,9 @@ namespace mu2e {
         return p.productID() == pid_;
       }
     public:
+      art::SelectorBase* clone() const { art::SelectorBase *temp = 0; return temp; }
       ProductIDSelector( const art::ProductID& pid) : pid_(pid) {}
-      std::string doPrint(std::string const& indent) const override {
+      std::string doPrint(std::string const& indent) const {
         std::ostringstream os;
         os << pid_;
         return indent + "art::ProductID: " + os.str();

@@ -207,6 +207,7 @@ namespace mu2e {
 
     // Label of the module that made the hits.
     art::ProductToken<StrawDigiCollection> const  _sdtoken;
+    art::ProductToken<StrawDigiADCWaveformCollection> const  _sdadctoken;
     art::ProductToken<CaloDigiCollection>  const  _cdtoken;
     art::ProductToken<CrvDigiCollection>   const  _crvtoken;
 
@@ -223,7 +224,7 @@ namespace mu2e {
     //--------------------------------------------------------------------------------
     //  methods used to process the tracker data
     //--------------------------------------------------------------------------------
-    void   fillTrackerDataPacket(const StrawDigi& SD, TrackerDataPacket& TrkData);
+    void   fillTrackerDataPacket(const StrawDigi& SD, const StrawDigiADCWaveform& SDADC, TrackerDataPacket& TrkData);
 
     void   fillTrackerHeaderDataPacket(const StrawDigi& SD, DataBlockHeader& HeaderData, uint64_t& EventNum);
 
@@ -594,7 +595,7 @@ namespace mu2e {
 
   }
 
-  void   ArtBinaryPacketsFromDigis::fillTrackerDataPacket(const StrawDigi& SD, TrackerDataPacket& TrkData) {
+  void   ArtBinaryPacketsFromDigis::fillTrackerDataPacket(const StrawDigi& SD, const StrawDigiADCWaveform& SDADC, TrackerDataPacket& TrkData) {
 
     TrkData.StrawIndex = SD.strawId().asUint16();
     TrkData.TDC0 = SD.TDC(StrawEnd::cal);
@@ -602,9 +603,9 @@ namespace mu2e {
     TrkData.TOT0 = SD.TOT(StrawEnd::cal);
     TrkData.TOT1 = SD.TOT(StrawEnd::hv);
 
-    TrkTypes::ADCWaveform const& theWaveform = SD.adcWaveform();
+    TrkTypes::ADCWaveform const& theWaveform = SDADC.samples();
 
-    for (size_t i=0; i<TrkTypes::NADC; ++i){
+    for (size_t i=0; i<theWaveform.size(); ++i){
       TrkData.SetWaveform(i,  theWaveform[i]);
     }
 
@@ -628,6 +629,7 @@ namespace mu2e {
     _diagLevel             (config().diagLevel()),
     _maxFullPrint          (config().maxFullPrint()),
     _sdtoken               { consumes<mu2e::StrawDigiCollection>(config().sdtoken())},
+    _sdadctoken            { consumes<mu2e::StrawDigiADCWaveformCollection>(config().sdtoken())},
     _cdtoken               { consumes<mu2e::CaloDigiCollection> (config().cdtoken())},
     _crvtoken              { consumes<mu2e::CrvDigiCollection>  (config().crvtoken())},
     _numWordsWritten(0),
@@ -1051,15 +1053,18 @@ namespace mu2e {
 						     tracker_data_block_list_t &trackerData) {
     auto  const& sdH = evt.getValidHandle(_sdtoken);
     const StrawDigiCollection& hits_SD(*sdH);
+    auto  const& sdadcH = evt.getValidHandle(_sdadctoken);
+    const StrawDigiADCWaveformCollection& hits_SDadc(*sdadcH);
 
     tracker_data_block_list_t tmpTrackerData;
 
     for (size_t i = 0; i < hits_SD.size(); ++i) {
       StrawDigi const& SD = hits_SD.at(i);
+      StrawDigiADCWaveform const& SDadc = hits_SDadc.at(i);
 
       // Fill struct with info for current hit
       TrackerDataPacket trkData;
-      fillTrackerDataPacket(SD, trkData);
+      fillTrackerDataPacket(SD, SDadc, trkData);
       DataBlockHeader   headerData;
       fillTrackerHeaderDataPacket(SD, headerData, eventNum);
 
