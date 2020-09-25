@@ -164,19 +164,14 @@ namespace mu2e {
 
   
   void StrawElectronics::digitizeWaveform(StrawId sid, ADCVoltages const& wf, ADCWaveform& adc, ADCValue& pmp) const{
-    if(wf.size() != adc.size()){
-      throw cet::exception("SIM") 
-	<< "mu2e::StrawElectronics: wrong number of voltages to digitize" 
-	<< endl;
-    }
+    adc.reserve(wf.size());
     ADCValue peak = 0;
     ADCValue pedestal = 0;
-    for(size_t iadc=0;iadc<adc.size();++iadc){
-      adc.at(iadc) = adcResponse(sid, wf[iadc]);
+    for(size_t iadc=0;iadc<wf.size();++iadc){
+      adc.push_back(adcResponse(sid, wf[iadc]));
       if (iadc <_nADCpre)
         pedestal += adc.at(iadc);
-      else
-        peak = max(adc.at(iadc),peak);
+      peak = max(adc.at(iadc),peak);
     }
     pmp = peak - (pedestal/(int)_nADCpre);
   }

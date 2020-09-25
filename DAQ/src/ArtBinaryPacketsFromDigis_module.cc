@@ -9,6 +9,7 @@
 
 // C++ includes.
 #include <iostream>
+#include <stdio.h>
 #include <string>
 #include <cmath>
 
@@ -62,6 +63,7 @@ using namespace std;
 
 using  DataBlockHeader = mu2e::ArtFragmentReader::DataBlockHeader;
 using  TrackerDataPacket = mu2e::ArtFragmentReader::TrackerDataPacket;
+using  TrackerADCPacket = mu2e::ArtFragmentReader::TrackerADCPacket;
 using  adc_t = mu2e::ArtFragment::adc_t;
 using  CalorimeterDataPacket = mu2e::ArtFragmentReader::CalorimeterDataPacket;
 using  CalorimeterBoardID = mu2e::ArtFragmentReader::CalorimeterBoardID;
@@ -78,8 +80,18 @@ struct CaloDataPacket {
   std::vector<uint16_t> hitIndex;
 };
 
+//data struct for the tracker
+struct TrkDataPacket { 
+  TrackerDataPacket			   mainPacket;
+  std::vector<TrackerADCPacket>		   adcPacketVec;
+};
+
+struct TrkDataPayload {
+  std::vector<TrkDataPacket> 		   dataPacketVec;
+};
+
 using raw_data_list_t      = std::deque<std::pair<mu2e_databuff_t, size_t>>; 
-using tracker_data_block_t = std::pair<DataBlockHeader, TrackerDataPacket>;  
+using tracker_data_block_t = std::pair<DataBlockHeader, TrkDataPayload>;  
 using calo_data_block_t    = std::pair<DataBlockHeader, CaloDataPacket>;     
 
 using tracker_data_block_list_t = std::deque<tracker_data_block_t> ;
@@ -224,11 +236,7 @@ namespace mu2e {
     //--------------------------------------------------------------------------------
     //  methods used to process the tracker data
     //--------------------------------------------------------------------------------
-    void   fillTrackerDataPacket(const StrawDigi& SD, const StrawDigiADCWaveform& SDADC, TrackerDataPacket& TrkData);
-
-    void   fillTrackerHeaderDataPacket(const StrawDigi& SD, DataBlockHeader& HeaderData, uint64_t& EventNum);
-
-    void   fillEmptyTrackerDataPacket(TrackerDataPacket& TrkData);
+    void   fillTrackerDataPacket(const StrawDigi& SD, const StrawDigiADCWaveform& SDADC, TrkDataPacket& TrkData, DataBlockHeader& headerData);
 
     void   processTrackerData(art::Event& evt, uint64_t& eventNum,
 			      tracker_data_block_list_t &trackerData);
@@ -238,14 +246,14 @@ namespace mu2e {
 
     void   fillTrackerDataStream(raw_data_list_t& dataStream, tracker_data_block_t const& trkData);
 
-    void   printTrackerData(TrackerDataPacket const& curDataBlock);
+    void   printTrackerData(TrkDataPayload const& curDataBlock);
 
     //--------------------------------------------------------------------------------
     //  methods used to handle the calorimeter data
     //--------------------------------------------------------------------------------
     void   fillCalorimeterDataPacket(const CaloDigi& SD, CaloDataPacket& caloData);
     void   addCaloHitToCaloPacket(calo_data_block_t& dataBlock,
-				  CaloDataPacket& caloData);
+        CaloDataPacket& caloData);
 
     void   fillCalorimeterHeaderDataPacket(const CaloDigi& SD, DataBlockHeader& HeaderData, uint64_t& EventNum);
 
@@ -253,7 +261,7 @@ namespace mu2e {
     void   fillHeaderByteAndPacketCounts(calo_data_block_t& caloData);
 
     void   processCalorimeterData(art::Event& evt, uint64_t& eventNum,
-				  calo_data_block_list_t& caloDataBlocks);
+        calo_data_block_list_t& caloDataBlocks);
 
 
     void   fillCalorimeterDMABlocks(raw_data_list_t& dataStream, calo_data_block_list_t& caloData);
@@ -282,24 +290,24 @@ namespace mu2e {
     void closeDataBuffer(raw_data_list_t& dataStream, bool openNew = true) {     
       uint64_t sz = dataStream.back().second;
       if (_diagLevel > 3) {
-	std::cout<< "[closeDataBuffer] 1) sz = "<<sz<<std::endl;
-	std::cout << "[closeDataBuffer] 1a) sz = "<< dataStream.back().second << std::endl;
+        std::cout<< "[closeDataBuffer] 1) sz = "<<sz<<std::endl;
+        std::cout << "[closeDataBuffer] 1a) sz = "<< dataStream.back().second << std::endl;
       }
       if (sz < 48) {
-	if (_diagLevel > 3) {
-	  std::cout<< "[closeDataBuffer] dataStream.back().first = "<<dataStream.back().first<<std::endl;
-	  std::cout<< "[closeDataBuffer] dataStream.back().first[sz] = "<<dataStream.back().first[sz]<<std::endl;
-	  std::cout<< "[closeDataBuffer] &dataStream.back().first[sz] = "<<&dataStream.back().first[sz]<<std::endl;
-	}
-	bzero(&dataStream.back().first[sz], 48 - sz);
-	sz = 48;
+        if (_diagLevel > 3) {
+          std::cout<< "[closeDataBuffer] dataStream.back().first = "<<dataStream.back().first<<std::endl;
+          std::cout<< "[closeDataBuffer] dataStream.back().first[sz] = "<<dataStream.back().first[sz]<<std::endl;
+          std::cout<< "[closeDataBuffer] &dataStream.back().first[sz] = "<<&dataStream.back().first[sz]<<std::endl;
+        }
+        bzero(&dataStream.back().first[sz], 48 - sz);
+        sz = 48;
       }
       if (_diagLevel > 3) {
-	std::cout << "[closeDataBuffer] dataStream.size = "<< dataStream.size() << std::endl;
-	if (dataStream.size()> 0){
-	  std::cout <<  "[closeDataBuffer] dataStream.back().second = " << dataStream.back().second <<std::endl;
-	}
-	std::cout<< "[closeDataBuffer] 2) sz = "<<sz<<std::endl;
+        std::cout << "[closeDataBuffer] dataStream.size = "<< dataStream.size() << std::endl;
+        if (dataStream.size()> 0){
+          std::cout <<  "[closeDataBuffer] dataStream.back().second = " << dataStream.back().second <<std::endl;
+        }
+        std::cout<< "[closeDataBuffer] 2) sz = "<<sz<<std::endl;
       }
       uint64_t ex_sz = sz - 16;
 
@@ -307,8 +315,8 @@ namespace mu2e {
       memcpy(&dataStream.back().first[8], &ex_sz, sizeof(uint64_t));
 
       if (openNew) {
-	dataStream.push_back(std::pair<mu2e_databuff_t, size_t>());
-	dataStream.back().second = 16; // DMA Size words
+        dataStream.push_back(std::pair<mu2e_databuff_t, size_t>());
+        dataStream.back().second = 16; // DMA Size words
       }
     }
 
@@ -324,8 +332,8 @@ namespace mu2e {
     size_t  indexMax(0), content(0);
     for (size_t i = 0; i < waveform.size(); ++i) {
       if (waveform[i] > content) {
-	content = waveform[i];
-	indexMax = i;
+        content = waveform[i];
+        indexMax = i;
       }
     }
 
@@ -353,32 +361,23 @@ namespace mu2e {
 
   }
 
-  void   ArtBinaryPacketsFromDigis::printTrackerData(TrackerDataPacket const& trkData) {
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] START tracker-data print \n");
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] StrawIndex    : %i \n", (int)trkData.StrawIndex);
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] TDC0		: %i \n", (int)trkData.TDC0);
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] TDC1		: %i \n", (int)trkData.TDC1);
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] TOT0		: %i \n", (int)trkData.TOT0);
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] TOT1		: %i \n", (int)trkData.TOT1);
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] ADC00         : %i \n", (int)trkData.ADC00);
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] ADC01  	: %i \n", (int)trkData.ADC01());
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] ADC02  	: %i \n", (int)trkData.ADC02());
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] ADC03  	: %i \n", (int)trkData.ADC03);
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] ADC04  	: %i \n", (int)trkData.ADC04);
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] ADC05 	: %i \n", (int)trkData.ADC05());
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] ADC06  	: %i \n", (int)trkData.ADC06());
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] ADC07  	: %i \n", (int)trkData.ADC07);
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] ADC08  	: %i \n", (int)trkData.ADC08);
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] ADC09  	: %i \n", (int)trkData.ADC09());
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] ADC10  	: %i \n", (int)trkData.ADC10());
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] ADC11  	: %i \n", (int)trkData.ADC11);
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] ADC12  	: %i \n", (int)trkData.ADC12);
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] ADC13 	: %i \n", (int)trkData.ADC13());
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] ADC14 	: %i \n", (int)trkData.ADC14());
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] unused1 	: %i \n", (int)trkData.unused1);
-    printf("[ArtBinaryPacketsFromDigis::printTrackerData] PreprocessingFlags : %i \n", (int)trkData.PreprocessingFlags);
-
-
+  void   ArtBinaryPacketsFromDigis::printTrackerData(TrkDataPayload const& trkData) {
+    for (size_t i=0;i<trkData.dataPacketVec.size();i++){
+      printf("[ArtBinaryPacketsFromDigis::printTrackerData] START tracker-data print \n");
+      printf("[ArtBinaryPacketsFromDigis::printTrackerData] StrawIndex  : %i \n", (int)trkData.dataPacketVec[i].mainPacket.StrawIndex);
+      printf("[ArtBinaryPacketsFromDigis::printTrackerData] TDC0	: %i \n", (int)trkData.dataPacketVec[i].mainPacket.TDC0());
+      printf("[ArtBinaryPacketsFromDigis::printTrackerData] TDC1	: %i \n", (int)trkData.dataPacketVec[i].mainPacket.TDC1());
+      printf("[ArtBinaryPacketsFromDigis::printTrackerData] TOT0	: %i \n", (int)trkData.dataPacketVec[i].mainPacket.TOT0);
+      printf("[ArtBinaryPacketsFromDigis::printTrackerData] TOT1	: %i \n", (int)trkData.dataPacketVec[i].mainPacket.TOT1);
+      printf("[ArtBinaryPacketsFromDigis::printTrackerData] ADC0        : %i \n", (int)trkData.dataPacketVec[i].mainPacket.ADC00);
+      printf("[ArtBinaryPacketsFromDigis::printTrackerData] ADC01  	: %i \n", (int)trkData.dataPacketVec[i].mainPacket.ADC01());
+      printf("[ArtBinaryPacketsFromDigis::printTrackerData] ADC02  	: %i \n", (int)trkData.dataPacketVec[i].mainPacket.ADC02);
+      printf("[ArtBinaryPacketsFromDigis::printTrackerData] PMP   	: %i \n", (int)trkData.dataPacketVec[i].mainPacket.PMP);
+      printf("[ArtBinaryPacketsFromDigis::printTrackerData] unused1 	: %i \n", (int)trkData.dataPacketVec[i].mainPacket.unused1);
+      printf("[ArtBinaryPacketsFromDigis::printTrackerData] EWMCounter 	: %i \n", (int)trkData.dataPacketVec[i].mainPacket.EWMCounter);
+      printf("[ArtBinaryPacketsFromDigis::printTrackerData] ErrorFlags 	: %i \n", (int)trkData.dataPacketVec[i].mainPacket.ErrorFlags);
+      printf("[ArtBinaryPacketsFromDigis::printTrackerData] NumADCPackets : %i \n", (int)trkData.dataPacketVec[i].mainPacket.NumADCPackets);
+    }
   }
 
   void   ArtBinaryPacketsFromDigis::printCalorimeterData(CaloDataPacket const& caloData) {
@@ -432,11 +431,8 @@ namespace mu2e {
     auto sz = sizeof(DataBlockHeader);
     //check that the trkDataBlock is not empty
 
-    if(trackerData.first.PacketCount != 0 && trackerData.first.PacketCount != 2){ // Tracker DataBlocks have 0 or 2 DataPackets
-      throw cet::exception("Online-RECO")<<"ArtBinaryPacketsFromDigis::fillTrackerDataStream : trackerData.first.PacketCount == 0 || trackerData.first.PacketCount == 2)" << std::endl;
-    }
     if (trackerData.first.PacketCount > 0) {
-      sz += sizeof(TrackerDataPacket);
+      sz += sizeof(TrackerDataPacket) * trackerData.first.PacketCount;
     }
 
 
@@ -455,15 +451,21 @@ namespace mu2e {
 
     if (trackerData.first.PacketCount > 0) {
       if(sizeof(TrackerDataPacket) % 16 != 0){ // Make sure that TrackerDataPacket is an even number of DataPackets!
-	throw cet::exception("Online-RECO")<<"ArtBinaryPacketsFromDigis::fillTrackerDataStream : sizeof(TrackerDataPacket) % 16 == 0" << std::endl;
+        throw cet::exception("Online-RECO")<<"ArtBinaryPacketsFromDigis::fillTrackerDataStream : sizeof(TrackerDataPacket) % 16 == 0" << std::endl;
       }
-      memcpy(&dataStream.back().first[pos], &trackerData.second, sizeof(TrackerDataPacket));
-      pos += sizeof(TrackerDataPacket);
+      for (size_t ipkt=0;ipkt<trackerData.second.dataPacketVec.size();ipkt++){
+        auto ptr = &(trackerData.second.dataPacketVec[ipkt]);
+        size_t num_packets = ptr->mainPacket.NumADCPackets;
+        memcpy(&dataStream.back().first[pos], &(ptr->mainPacket), sizeof(TrackerDataPacket));
+        pos += sizeof(TrackerDataPacket);
+        if (trackerData.second.dataPacketVec[ipkt].adcPacketVec.size() > 0){
+          memcpy(&dataStream.back().first[pos], &(ptr->adcPacketVec[0]), sizeof(TrackerADCPacket)*num_packets);
+          pos += sizeof(TrackerADCPacket)*num_packets;
+        }
+      }
     }
 
     dataStream.back().second = pos;
-
-
   }
 
   void  ArtBinaryPacketsFromDigis::fillTrackerDMABlocks(raw_data_list_t& dataStream, tracker_data_block_list_t const& trkData) {
@@ -495,14 +497,6 @@ namespace mu2e {
 
     } // End loop over DataBlocks
   }
-
-  //--------------------------------------------------------------------------------
-  //
-  //--------------------------------------------------------------------------------
-  void   ArtBinaryPacketsFromDigis::fillEmptyTrackerDataPacket(TrackerDataPacket& TrkData) {
-    bzero(&TrkData, sizeof(TrkData));
-  }
-
 
 
   //--------------------------------------------------------------------------------  
@@ -543,74 +537,37 @@ namespace mu2e {
     headerData.EVBMode = evbMode;
   }
 
-  //--------------------------------------------------------------------------------
-  // create the header for the StrawPacket
-  //--------------------------------------------------------------------------------
-  void   ArtBinaryPacketsFromDigis::fillTrackerHeaderDataPacket(const StrawDigi& SD, DataBlockHeader& HeaderData,
-								uint64_t& EventNum) {
-    // Word 0
-    adc_t   nBytes = sizeof(DataBlockHeader) + sizeof(TrackerDataPacket);//ask Eric! //FIX ME!
-    HeaderData.ByteCount = nBytes;
-    // Word 1
-    HeaderData.Hopcount = 0;//currently unused
-    HeaderData.PacketType = 5;//PacketType::Dataheader;
+  void   ArtBinaryPacketsFromDigis::fillTrackerDataPacket(const StrawDigi& SD, const StrawDigiADCWaveform& SDADC, TrkDataPacket& TrkData, DataBlockHeader& headerData) {
 
-    // 96 straws per ROC/panel
-    // 6 panels / plane
-    //      // 36 planes => 216 panels/ROCs
-    // There are actually 40 planes in the input file => 240 panels/ROCs    
-    int panel = SD.strawId().getPanel();
-    int plane = SD.strawId().getPlane();
+    TrkData.mainPacket.StrawIndex = SD.strawId().asUint16();
+    TrkData.mainPacket.SetTDC0(SD.TDC(StrawEnd::cal));
+    TrkData.mainPacket.SetTDC1(SD.TDC(StrawEnd::hv));
+    TrkData.mainPacket.TOT0 = SD.TOT(StrawEnd::cal);
+    TrkData.mainPacket.TOT1 = SD.TOT(StrawEnd::hv);
+    TrkData.mainPacket.EWMCounter = headerData.TimestampLow & 0xF;
+    TrkData.mainPacket.PMP = SD.PMP();
+    TrkData.mainPacket.ErrorFlags = 0; //FIXME
+    TrkData.mainPacket.unused1 = 0;
 
-    // ROC ID, counting from 0 across all DTCs (for the tracker)
-    //    uint8_t localROCID = panel;
-    uint8_t globalROCID = (plane * 6) + panel;
+    headerData.ByteCount += sizeof(TrackerDataPacket);
+    headerData.PacketCount++;
 
-    // 240 ROCs total
-    if (globalROCID >= number_of_rocs) {
-      throw cet::exception("DATA") << " Global ROC ID " << globalROCID
-				   << " exceeds limit of " << number_of_rocs;
-    }
-    HeaderData.ROCID = panel;
-    HeaderData.unused1 = 0;
-    HeaderData.SubsystemID = DTCLib::DTC_Subsystem_Tracker;
-    HeaderData.Valid = 1;
-    // Word 2
-    HeaderData.PacketCount = 2;
-    HeaderData.unused2 = 0;
-    // Word 3
-    uint64_t timestamp = EventNum;
-    HeaderData.TimestampLow = static_cast<adc_t>(timestamp & 0xFFFF);
-    // Word 4
-    HeaderData.TimestampMed = static_cast<adc_t>((timestamp >> 16) & 0xFFFF);
-    // Word 5
-    HeaderData.TimestampHigh = static_cast<adc_t>((timestamp >> 32) & 0xFFFF);
-    // Word 6
-    HeaderData.Status = 0; // 0 corresponds to "TimeStamp had valid data"
-    HeaderData.FormatVersion = format_version;
-    // Word 7
-    HeaderData.DTCID = static_cast<uint8_t>(globalROCID / number_of_rocs_per_dtc);
-    uint8_t  evbMode = 0;//ask Eric
-    HeaderData.EVBMode = evbMode;
-
-  }
-
-  void   ArtBinaryPacketsFromDigis::fillTrackerDataPacket(const StrawDigi& SD, const StrawDigiADCWaveform& SDADC, TrackerDataPacket& TrkData) {
-
-    TrkData.StrawIndex = SD.strawId().asUint16();
-    TrkData.TDC0 = SD.TDC(StrawEnd::cal);
-    TrkData.TDC1 = SD.TDC(StrawEnd::hv);
-    TrkData.TOT0 = SD.TOT(StrawEnd::cal);
-    TrkData.TOT1 = SD.TOT(StrawEnd::hv);
 
     TrkTypes::ADCWaveform const& theWaveform = SDADC.samples();
-
-    for (size_t i=0; i<theWaveform.size(); ++i){
-      TrkData.SetWaveform(i,  theWaveform[i]);
+    size_t numADCPackets = static_cast<size_t>((theWaveform.size() - 3)/12);
+    TrkData.mainPacket.NumADCPackets = numADCPackets;
+    for (size_t i=0;i<3;i++){
+      TrkData.mainPacket.SetWaveform(i, theWaveform[i]);
     }
-
-    TrkData.PreprocessingFlags = 0;
-
+    for (size_t i=0;i<numADCPackets;i++){
+      TrackerADCPacket adcPacket;
+      for (size_t j=0;j<12;j++){
+        adcPacket.SetWaveform(j, theWaveform[3 + i*12 + j]);
+      }
+      TrkData.adcPacketVec.push_back(adcPacket);
+      headerData.ByteCount += sizeof(TrackerADCPacket);
+      headerData.PacketCount++;
+    }
   }
 
 
@@ -1050,31 +1007,11 @@ namespace mu2e {
   //  method that process the tracker data 
   //--------------------------------------------------------------------------------
   void ArtBinaryPacketsFromDigis::processTrackerData(art::Event& evt, uint64_t& eventNum,
-						     tracker_data_block_list_t &trackerData) {
+      tracker_data_block_list_t &trackerData) {
     auto  const& sdH = evt.getValidHandle(_sdtoken);
     const StrawDigiCollection& hits_SD(*sdH);
     auto  const& sdadcH = evt.getValidHandle(_sdadctoken);
     const StrawDigiADCWaveformCollection& hits_SDadc(*sdadcH);
-
-    tracker_data_block_list_t tmpTrackerData;
-
-    for (size_t i = 0; i < hits_SD.size(); ++i) {
-      StrawDigi const& SD = hits_SD.at(i);
-      StrawDigiADCWaveform const& SDadc = hits_SDadc.at(i);
-
-      // Fill struct with info for current hit
-      TrackerDataPacket trkData;
-      fillTrackerDataPacket(SD, SDadc, trkData);
-      DataBlockHeader   headerData;
-      fillTrackerHeaderDataPacket(SD, headerData, eventNum);
-
-      tmpTrackerData.push_back(std::pair<DataBlockHeader, TrackerDataPacket>(headerData, trkData));
-    }
-
-    if (_diagLevel > 1) {
-      std::cout << "[ArtBinaryPacketsFromDigis::processTrackerData ] Total number of tracker non-empty DataBlocks = " <<
-	tmpTrackerData.size() << std::endl;
-    }
 
     uint8_t max_dtc_id = number_of_rocs / number_of_rocs_per_dtc - 1;
     if (number_of_rocs % number_of_rocs_per_dtc > 0) {
@@ -1085,38 +1022,32 @@ namespace mu2e {
     for (uint8_t dtcID = 0; dtcID < max_dtc_id; dtcID++) {
 
       for (uint8_t rocID = 0; rocID < number_of_rocs_per_dtc; ++rocID) {
-	bool data_found = false;
-	// Find all hits for this event coming from the specified DTC/ROC combination
-	// if (_diagLevel > 1) {
-	//   std::cout << "[ArtBinaryPacketsFromDigis::processTrackerData ] dtcId ="<< (int)dtcID << " rcoID = "<< (int)rocID << std::endl;
-	//   std::cout << " DTC    ROC" <<std::endl;
-	// }
+        DataBlockHeader headerData;
+        fillEmptyHeaderDataPacket(headerData, eventNum, rocID, dtcID, DTCLib::DTC_Subsystem_Tracker);
+        TrkDataPayload trkPayload;
+        trackerData.push_back(std::pair<DataBlockHeader, TrkDataPayload>(headerData, trkPayload));
 
-	for (size_t curHitIdx = 0; curHitIdx < tmpTrackerData.size(); curHitIdx++) {
-	  // if (_diagLevel > 1) {
-	  //   std::cout << (int)tmpTrackerData[curHitIdx].first.DTCID << "    "<< (int)tmpTrackerData[curHitIdx].first.ROCID <<std::endl;
-	  // }
+        // Find all hits for this event coming from the specified DTC/ROC combination
+        for (size_t i = 0; i < hits_SD.size(); ++i) {
+          StrawDigi const& SD = hits_SD.at(i);
+          StrawDigiADCWaveform const& SDadc = hits_SDadc.at(i);
 
-	  if (tmpTrackerData[curHitIdx].first.DTCID == dtcID &&
-	      tmpTrackerData[curHitIdx].first.ROCID == rocID) {
-	    // if (_diagLevel > 1) {
-	    //   std::cout <<"\t data found!" << std::endl;
-	    // }
-	    trackerData.push_back(tmpTrackerData[curHitIdx]);
-	    data_found = true;
-	  }
-	}
+          // 96 straws per ROC/panel
+          // 6 panels / plane
+          //      // 36 planes => 216 panels/ROCs
+          // There are actually 40 planes in the input file => 240 panels/ROCs    
+          int panel = SD.strawId().getPanel();
+          int plane = SD.strawId().getPlane();
 
-	if (!data_found) {
-	  // No hits, so just fill a header packet and no data packets
-	  DataBlockHeader   headerData;
-	  TrackerDataPacket trkData;
-
-	  fillEmptyHeaderDataPacket(headerData, eventNum, rocID, dtcID, DTCLib::DTC_Subsystem_Tracker);
-	  fillEmptyTrackerDataPacket(trkData);
-
-	  trackerData.push_back(std::pair<DataBlockHeader, TrackerDataPacket>(headerData, trkData));
-	}
+          // ROC ID, counting from 0 across all DTCs (for the tracker)
+          //    uint8_t localROCID = panel;
+          uint8_t globalROCID = (plane * 6) + panel;
+          uint8_t thisDTCID = static_cast<uint8_t>(globalROCID / number_of_rocs_per_dtc);
+          if (panel == rocID && thisDTCID == dtcID){
+            trackerData.back().second.dataPacketVec.emplace_back();
+            fillTrackerDataPacket(SD, SDadc, trackerData.back().second.dataPacketVec.back(), trackerData.back().first);
+          }
+        }
       } //Done looping over the ROCs in a given DTC
     }
   }
