@@ -70,6 +70,9 @@ helper.make_plugins([mainlib,
                      'boost_filesystem',
                      'boost_system',
                      rootlibs,
+                       'DTCInterface',
+                       'mu2e-artdaq-core_Overlays',
+                       'artdaq-core_Data',
                      'TMVA',
                      'xerces-c',  # only needed for MakeStereoHits_module.cc
                      # See the Fixme at the top of the file.

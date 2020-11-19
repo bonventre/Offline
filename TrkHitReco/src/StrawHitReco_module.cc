@@ -36,6 +36,8 @@
 #include "RecoDataProducts/inc/ComboHit.hh"
 #include "RecoDataProducts/inc/StrawHit.hh"
 
+#include "mu2e-artdaq-core/Overlays/TrackerFragment.hh"
+
 #include "TH1F.h"
 
 #include <memory>
@@ -43,6 +45,40 @@
 
 
 namespace mu2e {
+  class StrawFragmentDigi {
+    public:
+      StrawFragmentDigi(const mu2e::TrackerFragment::TrackerDataPacket* packet) : _packet(packet) {
+	_tdc = {packet->TDC0() , packet->TDC1()};
+	_tot = {packet->TOT0 , packet->TOT1};
+        _pmp = packet->PMP;
+      };
+      StrawId strawId() const { return StrawId(_packet->StrawIndex);}
+// TDC data are indexed according to straw end
+      unsigned long TDC(StrawEnd end) const { return _tdc[end];} 
+      unsigned long TOT(StrawEnd end) const { return _tot[end];};
+      TrkTypes::TDCValues const& TDC() const { return _tdc;};
+      TrkTypes::TOTValues const& TOT() const { return _tot;};
+      TrkTypes::ADCValue const& PMP() const { return _pmp; }
+//      StrawDigiFlag const& digiFlag() const = 0;
+//      StrawDigiFlag& digiFlag() = 0;
+    private:
+      const mu2e::TrackerFragment::TrackerDataPacket* _packet;
+      TrkTypes::TDCValues _tdc;
+      TrkTypes::TOTValues _tot;
+      TrkTypes::ADCValue _pmp;
+  };
+  typedef std::vector<mu2e::StrawFragmentDigi> StrawFragmentDigiCollection;
+
+  class StrawFragmentDigiADCWaveform {
+    public:
+      StrawFragmentDigiADCWaveform(const std::vector<uint16_t> adc) : _adc(adc) {};
+
+      TrkTypes::ADCWaveform const& samples() const { return _adc; }
+    private:
+      const std::vector<uint16_t> _adc;
+  };
+  typedef std::vector<mu2e::StrawFragmentDigiADCWaveform> StrawFragmentDigiADCWaveformCollection;
+
   using namespace TrkTypes;
 
   class StrawHitReco : public art::EDProducer {
@@ -65,6 +101,8 @@ namespace mu2e {
 	fhicl::Atom<bool>filter{ Name("FilterHits"), Comment("Filter hits (alternative is to just flag)") };
 	fhicl::Atom<bool>writesh{ Name("WriteStrawHitCollection"), Comment("Save StrawHitCollection")};
 	fhicl::Atom<bool>flagXT{ Name("FlagCrossTalk"), Comment("Search for cross-talk"),false};
+        fhicl::Atom<bool>useFrags{Name("UseFragments"), Comment("Use fragments"),false};
+        fhicl::Atom<art::InputTag> fragmentTag{ Name("FragmentCollectionTag"), Comment("FragmentCollection producer")};
 	fhicl::Atom<art::InputTag> sdcTag{ Name("StrawDigiCollectionTag"), Comment("StrawDigiCollection producer")};
         fhicl::Atom<art::InputTag> sdadcTag{ Name("StrawDigiADCWaveformCollectionTag"), Comment("StrawDigiADCWaveformCollection producer")};
 	fhicl::Atom<art::InputTag> cccTag{ Name("CaloClusterCollectionTag"), Comment("CaloClusterCollection producer")};
@@ -74,6 +112,7 @@ namespace mu2e {
       using Parameters = art::EDProducer::Table<Config>;
       explicit StrawHitReco(Parameters const& config);
       void produce( art::Event& e) override;
+      template<class SDI, class SDAWI> void doProduce(art::Event& event, const std::vector<SDI> sdcol, const std::vector<SDAWI> sdadccol);
       void beginRun( art::Run& run ) override;
       void beginJob() override;
 
@@ -91,6 +130,7 @@ namespace mu2e {
       bool  _filter;                // filter the output, or just flag
       bool  _writesh;                // write straw hits or not
       bool  _flagXT; // flag cross-talk
+      bool _useFrags;
       int   _printLevel;
       int   _diagLevel;
       StrawIdMask _mask;
@@ -100,6 +140,7 @@ namespace mu2e {
       float _invgain[96]; // cache
       unsigned _npre; //cache
 
+      art::InputTag _fragmentTag;
       art::ProductToken<StrawDigiCollection> const _sdctoken;
       art::ProductToken<StrawDigiADCWaveformCollection> const _sdadctoken;
       art::ProductToken<CaloClusterCollection> const _ccctoken;
@@ -131,9 +172,11 @@ namespace mu2e {
     _filter(config().filter()),
     _writesh(config().writesh()),
     _flagXT(config().flagXT()),
+    _useFrags(config().useFrags()),
     _printLevel(config().print()),
     _diagLevel(config().diag()),
     _end{StrawEnd::cal,StrawEnd::hv}, // this should be in a general place, FIXME!
+    _fragmentTag(config().fragmentTag()),
     _sdctoken{consumes<StrawDigiCollection>(config().sdcTag())},
     _sdadctoken{mayConsume<StrawDigiADCWaveformCollection>(config().sdadcTag())},
     _ccctoken{mayConsume<CaloClusterCollection>(config().cccTag())},
@@ -175,19 +218,60 @@ namespace mu2e {
   {
       if (_printLevel > 0) std::cout << "In StrawHitReco produce " << std::endl;
 
+      if (_useFrags){
+
+        StrawFragmentDigiCollection sdcol;
+        StrawFragmentDigiADCWaveformCollection sdadccol;
+        art::Handle<artdaq::Fragments> trkFragments;
+        event.getByLabel(_fragmentTag, trkFragments);
+        size_t numTrkFrags = trkFragments->size();
+        for (size_t idx = 0; idx < numTrkFrags; ++idx) {
+          mu2e::TrackerFragment cc((*trkFragments)[idx]);
+          for (size_t curBlockIdx = 0; curBlockIdx < cc.block_count(); curBlockIdx++) {
+            auto block = cc.dataAtBlockIndex(curBlockIdx);
+            auto hdr = block->GetHeader();
+
+            // Parse phyiscs information from TRK packets
+            if (hdr.GetPacketCount() > 0) {
+
+              // Create the StrawDigi data products
+              auto trkDataVec = cc.GetTrackerData(curBlockIdx);
+              if (trkDataVec.empty()) {
+                continue;
+              }
+              for (auto& trkDataPair : trkDataVec) {
+                sdcol.emplace_back(trkDataPair.first);
+                sdadccol.emplace_back(trkDataPair.second);
+              }
+            }
+          }
+          cc.ClearUpgradedPackets();
+        }
+
+        doProduce<StrawFragmentDigi>(event, sdcol,sdadccol);
+
+      }else{
+        auto sdH = event.getValidHandle(_sdctoken);
+        const StrawDigiCollection& sdcol(*sdH);
+
+        StrawDigiADCWaveformCollection sdadccol;
+        if (_fittype != TrkHitReco::FitType::firmwarepmp) {
+          auto sdawH = event.getValidHandle(_sdadctoken);
+          sdadccol = *(sdawH.product());
+        }
+
+        doProduce<StrawDigi>(event, sdcol, sdadccol);
+      }
+  }
+
+       
+  template<class SDI, class SDAWI> void StrawHitReco::doProduce(art::Event& event, const std::vector<SDI> sdcol, const std::vector<SDAWI> sdadccol)
+  {
       const Tracker& tt = _alignedTracker_h.get(event.id());
 
       size_t nplanes = tt.nPlanes();
       size_t npanels = tt.getPlane(0).nPanels();
       auto const& srep = _strawResponse_h.get(event.id());
-      auto sdH = event.getValidHandle(_sdctoken);
-      const StrawDigiCollection& sdcol(*sdH);
-
-      const StrawDigiADCWaveformCollection *sdadccol(0);
-      if (_fittype != TrkHitReco::FitType::firmwarepmp) {
-        auto sdawH = event.getValidHandle(_sdadctoken);
-        sdadccol = sdawH.product();
-      }
 
       const CaloClusterCollection* caloClusters(0);
       if(_usecc){
@@ -217,7 +301,7 @@ namespace mu2e {
       TrackerStatus const& trackerStatus = _trackerStatus_h.get(event.id());
 
       for (size_t isd=0;isd<sdcol.size();++isd) {
-	const StrawDigi& digi = sdcol[isd];
+	const SDI& digi = sdcol[isd];
 	// flag digis that shouldn't be here or we don't want
 	StrawHitFlag flag;
 	if (trackerStatus.noSignal(digi.strawId()) || trackerStatus.suppress(digi.strawId())) {
@@ -252,18 +336,18 @@ namespace mu2e {
 	//extract energy from waveform
 	float energy(0.0);
 	if (_fittype == TrkHitReco::FitType::peakminuspedavg){
-          auto adcwaveform = sdadccol->at(isd);
+          auto adcwaveform = sdadccol.at(isd);
 	  float charge = peakMinusPedAvg(adcwaveform.samples());
 	  energy = srep.ionizationEnergy(charge);
 	} else if (_fittype == TrkHitReco::FitType::peakminusped){
-          auto adcwaveform = sdadccol->at(isd);
+          auto adcwaveform = sdadccol.at(isd);
 	  float charge = peakMinusPed(digi.strawId(),adcwaveform.samples());
 	  energy = srep.ionizationEnergy(charge);
 	} else if (_fittype == TrkHitReco::FitType::firmwarepmp){
           float charge = peakMinusPedFirmware(digi.strawId(), digi.PMP());
           energy = srep.ionizationEnergy(charge);
         } else {
-          auto adcwaveform = sdadccol->at(isd);
+          auto adcwaveform = sdadccol.at(isd);
 	  TrkHitReco::PeakFitParams params;
 	  _pfit->process(adcwaveform.samples(),params);
 	  energy = srep.ionizationEnergy(params._charge/srep.strawGain());

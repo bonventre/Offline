@@ -14,6 +14,7 @@ makeSH : {
   ProtonBunchTimeTag  : "EWMProducer"
   StrawDigiCollectionTag  : "makeSD"
   StrawDigiADCWaveformCollectionTag : "makeSD"
+  FragmentCollectionTag : "daq:trk"
   CaloClusterCollectionTag  : "CaloClusterFast"
 }
 
