@@ -219,6 +219,11 @@ namespace mu2e {
       }
 
       tree_->GetEntry(entryIndex_);
+      if (_ewm < currentEventNumber_){
+        std::cout << "Hit out of order: expected " << currentEventNumber_ << " got " << _ewm << std::endl;
+        entryIndex_++;
+        continue;
+      }
       if (static_cast<unsigned>(_run) != currentSubRunNumber_ || _ewm != currentEventNumber_){
         managePrincipals(runNumber_, currentSubRunNumber_, currentEventNumber_, outR, outSR, outE);
         std::unique_ptr<mu2e::StrawDigiCollection> updigis(new mu2e::StrawDigiCollection);
