@@ -49,40 +49,19 @@ namespace mu2e {
     }
   }
 
-  double StrawResponse::driftDistanceError(StrawId strawId,
-      double ddist, double phi, double DOCA) const {
-    if(useDriftError()){
-      // maximum drift is the straw radius.  should come from conditions FIXME!
-      static double rstraw(2.5);
-      double doca = std::min(fabs(DOCA),rstraw);
-      size_t idoca = std::min(_derr.size()-1,size_t(floor(_derr.size()*(doca/rstraw))));
-      return _derr[idoca];
-    }else{
-      double rres = _rres_min;
-      if(ddist < _rres_rad){
-        rres = _rres_min+_rres_max*(_rres_rad-ddist)/_rres_rad;
-      }
-      return rres;
-    }
-  }
-
-  double StrawResponse::driftDistanceOffset(StrawId strawId, double ddist, double phi, double DOCA) const {
-    return 0;
-  }
-
   double StrawResponse::driftTimeError(StrawId strawId,
-      double ddist, double phi, double DOCA) const {
+      double doca, double phi) const {
     if (useParameterizedDriftError()){
-      if (DOCA > 2.5)
-        DOCA = 2.5;
-      return PieceLine(_parDriftDocas, _parDriftRes, DOCA);
+      static double rstraw(2.5);
+      doca = std::min(fabs(doca),rstraw);
+      return PieceLine(_parDriftDocas, _parDriftRes, doca);
     }else{
-      return driftDistanceError(strawId, ddist, phi, DOCA) / _lindriftvel;
+      return driftDistanceError(strawId, doca, phi) / _lindriftvel;
     }
   }
 
-  double StrawResponse::driftTimeOffset(StrawId strawId, double ddist, double phi, double DOCA) const {
-    return PieceLine(_parDriftDocas, _parDriftOffsets, DOCA);
+  double StrawResponse::driftTimeOffset(StrawId strawId, double doca, double phi) const {
+    return PieceLine(_parDriftDocas, _parDriftOffsets, doca);
   }
 
 
@@ -172,17 +151,13 @@ namespace mu2e {
     printVector(os,"centres",_centres);
     printVector(os,"resslope",_resslope);
     printVector(os,"totdtime",_totdtime);
-    os << "usederr = " << _usederr << endl;
     printVector(os,"derr",_derr);
     os << "wbuf = " << _wbuf << endl;
     os << "slfac = " << _slfac << endl;
     os << "errfac = " << _errfac << endl;
     os << "usenonlindrift = " << _usenonlindrift << endl;
     os << "lindriftvel = " << _lindriftvel << endl;
-    os << "rres_min = " << _rres_min << endl;
-    os << "rres_max = " << _rres_max << endl;
     os << "mint0doca = " << _mint0doca << endl;
-    os << "t0shift = " << _t0shift << endl;
     printArray(os,"pmpEnergyScale",_pmpEnergyScale);
     printArray(os,"timeOffsetPanel",_timeOffsetPanel);
     printArray(os,"timeOffsetStrawHV",_timeOffsetStrawHV);
@@ -232,5 +207,18 @@ namespace mu2e {
       }
 
     }
+
+
+
+  // TO BE DEPRECATED?
+  double StrawResponse::driftDistanceError(StrawId strawId,
+      double doca, double phi) const {
+    // maximum drift is the straw radius.  should come from conditions FIXME!
+    static double rstraw(2.5);
+    doca = std::min(fabs(doca),rstraw);
+    size_t idoca = std::min(_derr.size()-1,size_t(floor(_derr.size()*(doca/rstraw))));
+    return _derr[idoca];
+  }
+
 
 }

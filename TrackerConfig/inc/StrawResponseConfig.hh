@@ -47,12 +47,8 @@ namespace mu2e {
       Name("totEBinWidth"), Comment("TOT drift time e bin width")};
     fhicl::Sequence<double>  totDriftTime {
       Name("totDriftTime"), Comment(" totDriftTime ")};
-    fhicl::Atom<bool>  useDriftErrorCalibration {
-      Name("useDriftErrorCalibration"), Comment(" useDriftErrorCalibration ")};
     fhicl::Sequence<double> driftErrorParameters {
       Name("driftErrorParameters"), Comment(" driftErrorParameters ")};
-    fhicl::Atom<bool>  useParameterizedDriftErrors {
-      Name("useParameterizedDriftErrors"), Comment(" use errors calculated from formula instead of numbers from fcl ")};
     fhicl::Atom<int> parameterizedDriftBins {
       Name("parameterizedDriftBins"), Comment(" number of bins for calculating error and drift offset ")};
     fhicl::Atom<double> parameterizedDriftSigma {
@@ -70,16 +66,8 @@ namespace mu2e {
       Name("useNonLinearDrift"), Comment(" useNonLinearDrift ")};
     fhicl::Atom<double> linearDriftVelocity {
       Name("linearDriftVelocity"), Comment(" mm/ns, only used if nonlindrift= ")};
-    fhicl::Atom<double> minDriftRadiusResolution {
-      Name("minDriftRadiusResolution"), Comment(" mm ")};
-    fhicl::Atom<double> maxDriftRadiusResolution {
-      Name("maxDriftRadiusResolution"), Comment(" mm ")};
-    fhicl::Atom<double> driftRadiusResolutionRadius {
-      Name("driftRadiusResolutionRadius"), Comment(" mm ")};
     fhicl::Atom<double> minT0DOCA {
       Name("minT0DOCA"), Comment("FIXME should be moved to a reconstruction configuration ")};
-    fhicl::Atom<double> t0shift {
-      Name("t0shift"), Comment("FIXME should be average slewing?")};
     fhicl::Atom<double> defaultPeakMinusPedestalEnergyScale {
       Name("defaultPeakMinusPedestalEnergyScale"), Comment("default constant value for pmp energy method calibration")};
     fhicl::Sequence<double> peakMinusPedestalEnergyScale {
@@ -108,6 +96,9 @@ namespace mu2e {
     fhicl::OptionalAtom<double> ADCPedestal {
       Name("ADCPedestal"), Comment("ADCPedestal")};
 
+    // TO BE DEPRECATED
+    fhicl::Atom<bool>  useParameterizedDriftErrors {
+      Name("useParameterizedDriftErrors"), Comment(" use errors calculated from formula instead of numbers from fcl ")};
   };
 
 }
