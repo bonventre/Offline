@@ -48,7 +48,7 @@ namespace mu2e {
   double StrawResponse::calibrateDriftDistanceToT2DDerivative(double ddist) const {
     if (ddist <= 0){
       if (_dc[2] + _dc[0] == 0)
-        return 1.0;
+        return _dc[1];
       else
         return _dc[1]*_dc[2]/(_dc[2]+_dc[0]);
     }
@@ -59,7 +59,7 @@ namespace mu2e {
   double StrawResponse::calibrateT2DToDriftDistanceDerivative(double t2d) const {
     if (t2d <= _dc[0]){
       if (_dc[2] == 0 && _dc[0] == 0)
-        return 1.0;
+        return 1.0/_dc[1];
       else if (_dc[2]== 0)
         return 1.0e8;
       else
