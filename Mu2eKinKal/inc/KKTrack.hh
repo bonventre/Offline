@@ -4,6 +4,7 @@
 // subclass of KinKal Track specialized for Mu2e
 //
 #include "KinKal/Fit/Track.hh"
+#include "KinKal/Detector/ParameterHit.hh"
 #include "Offline/DataProducts/inc/PDGCode.hh"
 #include "Offline/Mu2eKinKal/inc/KKStrawHit.hh"
 #include "Offline/Mu2eKinKal/inc/KKStrawHitCluster.hh"
@@ -38,7 +39,7 @@ namespace mu2e {
       using TRACK = KinKal::Track<KTRAJ>;
       // construct from configuration, fit environment, and hits and materials
       KKTrack(Config const& config, BFieldMap const& bfield, KTRAJ const& seedtraj, PDGCode::type tpart, KKSTRAWHITCLUSTERER const& shclusterer,
-          KKSTRAWHITCOL const& strawhits, KKSTRAWXINGCOL const& strawxings, KKCALOHITCOL const& calohits );
+          KKSTRAWHITCOL const& strawhits, KKSTRAWXINGCOL const& strawxings, KKCALOHITCOL const& calohits, bool constrainmom=false, double momerr=0 );
       // extend the track according to new configuration, hits, and/or exings
       void extendTrack(Config const& config,
           KKSTRAWHITCOL const& strawhits, KKSTRAWXINGCOL const& strawxings, KKCALOHITCOL const& calohits );
@@ -68,7 +69,8 @@ namespace mu2e {
       KKSTRAWHITCLUSTERER const& shclusterer,
       KKSTRAWHITCOL const& strawhits,
       KKSTRAWXINGCOL const& strawxings,
-      KKCALOHITCOL const& calohits) :
+      KKCALOHITCOL const& calohits,
+      bool constrainmom, double momerr) :
     KinKal::Track<KTRAJ>(config,bfield,seedtraj), tpart_(tpart), shclusterer_(shclusterer),
     strawhits_(strawhits),
     strawxings_(strawxings),
@@ -84,6 +86,17 @@ namespace mu2e {
         }
       }
       convertTypes(strawhits_, strawxings_, calohits_,  hits,exings);
+
+      if (constrainmom){
+        std::array<bool,6> mask = {false};
+        mask[5] = true;
+        KinKal::Parameters cparams = seedtraj.params();
+        for(size_t ipar=0; ipar < seedtraj.paramNames().size(); ipar++){
+          cparams.covariance()[ipar][ipar] = momerr*momerr;
+        }
+        hits.push_back(std::make_shared<KinKal::ParameterHit<KTRAJ>>(seedtraj.t0(),seedtraj,cparams,mask));
+      }
+
       this->fit(hits,exings);
     }
 

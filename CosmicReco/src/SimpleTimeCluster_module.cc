@@ -193,6 +193,8 @@ void SimpleTimeCluster::findClusters(TimeClusterCollection& tccol) {
   std::vector<size_t> max_panels;
   std::vector<size_t> max_planes;
   for (size_t n = 0; n < peakHits.size(); n++) {
+    max_planes.push_back(-1);
+    max_panels.push_back(-1);
     std::vector<int> hits_in_panel(StrawId::_nupanels, 0);
     std::vector<int> hits_in_plane(StrawId::_nplanes, 0);
     if (_useonepanel) {
@@ -214,10 +216,10 @@ void SimpleTimeCluster::findClusters(TimeClusterCollection& tccol) {
     }
     if (_minnpanels > 0 && npanels < _minnpanels)
       continue;
-    max_panels.push_back(std::distance(
-        hits_in_panel.begin(), std::max_element(hits_in_panel.begin(), hits_in_panel.end())));
-    max_planes.push_back(std::distance(
-        hits_in_plane.begin(), std::max_element(hits_in_plane.begin(), hits_in_plane.end())));
+    max_panels[n] = std::distance(
+        hits_in_panel.begin(), std::max_element(hits_in_panel.begin(), hits_in_panel.end()));
+    max_planes[n] = std::distance(
+        hits_in_plane.begin(), std::max_element(hits_in_plane.begin(), hits_in_plane.end()));
   }
 
   // Record TimeCluster info
@@ -245,6 +247,7 @@ void SimpleTimeCluster::findClusters(TimeClusterCollection& tccol) {
       tclust._strawHitIdxs.push_back(i);
       chCount++;
     }
+    std::cout << time1 << " " << time2 << " " << _useonepanel << " " << _useoneplane << " " << chCount << " " << avg << std::endl;
 
     tclust._t0 =
         TrkT0(avg / chCount,

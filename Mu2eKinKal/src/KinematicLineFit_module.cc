@@ -230,6 +230,15 @@ namespace mu2e {
           KTRAJ seedtraj = makeSeedTraj(hseed);
           // wrap the seed traj in a Piecewise traj: needed to satisfy PTOCA interface
           PKTRAJ pseedtraj(seedtraj);
+
+          XYZVectorF tpos0(hseed._track.MinuitParams.A0,0,hseed._track.MinuitParams.B0);
+          XYZVectorF tdir0(hseed._track.MinuitParams.A1,-1,hseed._track.MinuitParams.B1);
+          tdir0 = tdir0.Unit();
+          tpos0 -= tdir0/tdir0.z()*tpos0.z();
+          std::cout << "SEED WAS " << tpos0.x() << " " << tpos0.y() << " " << tpos0.z() << " and " << tdir0.x() << " " << tdir0.y() << " " << tdir0.z() << std::endl;
+          std::cout << "NOW IS   " << seedtraj.pos0().x() << " " << seedtraj.pos0().y() << " " << seedtraj.pos0().z() << " and " << seedtraj.direction().x() << " " << seedtraj.direction().y() << " " << seedtraj.direction().z() << std::endl;
+
+
           // first, we need to unwind the combohits.  We use this also to find the time range
           StrawHitIndexCollection strawHitIdxs;
           auto const& hhits = hseed.hits();
@@ -257,7 +266,7 @@ namespace mu2e {
             seedtraj.print(std::cout,print_);
           }
           // create and fit the track
-          auto kktrk = make_unique<KKTRK>(config_,*kkbf_,seedtraj,kkfit_.fitParticle(),kkfit_.strawHitClusterer(),strawhits,strawxings,calohits); //TODO - check on this
+          auto kktrk = make_unique<KKTRK>(config_,*kkbf_,seedtraj,kkfit_.fitParticle(),kkfit_.strawHitClusterer(),strawhits,strawxings,calohits,true,1e-4); //TODO - check on this
           bool save(true);//TODO - when would we like not to save?
           if(save || saveall_){
             // convert KKTrk into KalSeeds for persistence

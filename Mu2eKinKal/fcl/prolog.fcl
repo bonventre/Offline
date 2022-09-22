@@ -242,6 +242,9 @@ Mu2eKinKal : {
     CosmicFilter: @local::Mu2eKinKal.CosmicFilter
   }
 }
+Mu2eKinKal.producers.KKLineSeedFit.Mu2eSettings.FitParticle : -13
+Mu2eKinKal.producers.KKLineSeedFit.Mu2eSettings.FitDirection : 1
+
 Mu2eKinKal.producers.KKDeMSeedFit.Mu2eSettings.FitParticle : 11
 Mu2eKinKal.producers.KKDeMSeedFit.Mu2eSettings.FitDirection : 0
 Mu2eKinKal.producers.KKDePSeedFit.Mu2eSettings.FitParticle : -11
