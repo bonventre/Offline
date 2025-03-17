@@ -8,17 +8,6 @@
 #include "Offline/TrackerConditions/inc/StrawDrift.hh"
 #include "Offline/TrackerGeom/inc/Tracker.hh"
 
-// For Drift:
-#include "BTrk/BaBar/BaBar.hh"
-#include "BTrk/BbrGeom/BbrVectorErr.hh"
-#include "BTrk/BbrGeom/HepPoint.h"
-#include "BTrk/BbrGeom/Trajectory.hh"
-#include "BTrk/KalmanTrack/KalRep.hh"
-#include "BTrk/ProbTools/ChisqConsistency.hh"
-#include "BTrk/TrkBase/TrkMomCalculator.hh"
-#include "BTrk/TrkBase/TrkPoca.hh"
-#include "Offline/BTrkData/inc/TrkStrawHit.hh"
-
 // ROOT
 #include "TF1.h"
 #include "TH1F.h"
@@ -50,10 +39,6 @@ public:
 };
 
 namespace MinuitDriftFitter {
-FitResult DoFit(int const& _diag, CosmicTrackSeed& tseed, StrawResponse const& srep,
-                const Tracker* tracker, double const& max_doca, unsigned int const& minChits,
-                int const& MaxLogL, double const& _gaussTres, double const& maxTres);
-
 
 void DoDriftTimeFit(
     std::vector<double> & pars,

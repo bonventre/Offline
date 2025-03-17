@@ -91,7 +91,6 @@ namespace mu2e
                 void ConvertFitToDetectorFrame(TrackAxes axes, XYZVectorF Position, XYZVectorF Direction, CosmicTrack* cosmictrack, bool isseed, bool det);
 
                 bool goodTrack(CosmicTrack& track);
-                void DriftFit(CosmicTrackSeed& tseed, StrawResponse const& srep);
 
                 const Tracker*            _tracker;
                     void  setTracker    (const Tracker*    Tracker) { _tracker     = Tracker; }

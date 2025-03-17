@@ -3,10 +3,8 @@
 #include <cmath>
 
 // Cosmic Tracks:
-#include "Offline/CosmicReco/inc/CosmicTrackFit.hh"
 #include "Offline/RecoDataProducts/inc/CosmicTrack.hh"
 #include "Offline/RecoDataProducts/inc/CosmicTrackSeed.hh"
-#include "Offline/CosmicReco/inc/CosmicTrackMCInfo.hh"
 #include "Offline/MCDataProducts/inc/ProtonBunchTimeMC.hh"
 #include "Offline/CosmicReco/inc/PDFFit.hh"
 #include "Offline/CosmicReco/inc/MinuitDriftFitter.hh"

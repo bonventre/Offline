@@ -1,13 +1,10 @@
 cet_make_library(
     SOURCE
       src/CosmicTrackFit.cc
-      src/CosmicTrackMCInfo.cc
-      src/DriftFitUtils.cc
       src/MinuitDriftFitter.cc
       src/PDFFit.cc
     LIBRARIES PUBLIC
       
-      Offline::BTrkData
       Offline::DataProducts
       Offline::GeometryService
       Offline::Mu2eUtilities
@@ -15,63 +12,6 @@ cet_make_library(
       Offline::TrackerConditions
       Offline::TrackerGeom
       ROOT::Minuit2
-)
-
-cet_build_plugin(CosmicAnalyzer art::module
-    REG_SOURCE src/CosmicAnalyzer_module.cc
-    LIBRARIES REG
-      Offline::CosmicReco
-      
-      Offline::DataProducts
-      Offline::GeneralUtilities
-      Offline::GeometryService
-      Offline::MCDataProducts
-      Offline::Mu2eUtilities
-      Offline::ProditionsService
-      Offline::RecoDataProducts
-      Offline::TrkDiag
-)
-
-cet_build_plugin(CosmicFitDisplay art::module
-    REG_SOURCE src/CosmicFitDisplay_module.cc
-    LIBRARIES REG
-      Offline::CosmicReco
-      
-      Offline::GeneralUtilities
-      Offline::GeometryService
-      Offline::MCDataProducts
-      Offline::Mu2eUtilities
-      Offline::RecoDataProducts
-      Offline::TrackerGeom
-      Offline::TrkDiag
-      ROOT::Geom
-)
-
-cet_build_plugin(CosmicMCRecoDiff art::module
-    REG_SOURCE src/CosmicMCRecoDiff_module.cc
-    LIBRARIES REG
-      Offline::CosmicReco
-      
-      Offline::DataProducts
-      Offline::GeneralUtilities
-      Offline::GeometryService
-      Offline::MCDataProducts
-      Offline::Mu2eUtilities
-      Offline::ProditionsService
-      Offline::RecoDataProducts
-      Offline::TrackerConditions
-      Offline::TrackerGeom
-      Offline::TrkDiag
-)
-
-cet_build_plugin(CosmicMuonInfo art::module
-    REG_SOURCE src/CosmicMuonInfo_module.cc
-    LIBRARIES REG
-      Offline::CosmicReco
-      
-      Offline::DataProducts
-      Offline::MCDataProducts
-      Offline::RecoDataProducts
 )
 
 cet_build_plugin(CosmicSeedFilter art::module
@@ -90,23 +30,6 @@ cet_build_plugin(CosmicShowerFilter art::module
       Offline::ProditionsService
       Offline::RecoDataProducts
       Offline::TrackerConditions
-)
-
-cet_build_plugin(CosmicTrackDetails art::module
-    REG_SOURCE src/CosmicTrackDetails_module.cc
-    LIBRARIES REG
-      Offline::CosmicReco
-      
-      Offline::DataProducts
-      Offline::GeneralUtilities
-      Offline::GeometryService
-      Offline::MCDataProducts
-      Offline::Mu2eUtilities
-      Offline::ProditionsService
-      Offline::RecoDataProducts
-      Offline::TrackerConditions
-      Offline::TrackerGeom
-      Offline::TrkDiag
 )
 
 cet_build_plugin(CosmicTrackDiag art::module
@@ -129,7 +52,6 @@ cet_build_plugin(CosmicTrackFinder art::module
     LIBRARIES REG
       Offline::CosmicReco
       
-      Offline::BTrkData
       Offline::GeneralUtilities
       Offline::GeometryService
       Offline::Mu2eUtilities

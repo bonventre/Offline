@@ -16,23 +16,9 @@
 #include "Offline/TrackerGeom/inc/Tracker.hh"
 #include "Offline/RecoDataProducts/inc/TimeCluster.hh"
 
-//For Drift:
-#include "BTrk/BaBar/BaBar.hh"
-#include "BTrk/BbrGeom/Trajectory.hh"
-#include "BTrk/KalmanTrack/KalRep.hh"
-#include "BTrk/BbrGeom/HepPoint.h"
-#include "BTrk/TrkBase/TrkPoca.hh"
-#include "Offline/BTrkData/inc/TrkStrawHit.hh"
-#include "BTrk/BbrGeom/BbrVectorErr.hh"
-#include "BTrk/TrkBase/TrkPoca.hh"
-#include "BTrk/ProbTools/ChisqConsistency.hh"
-#include "BTrk/TrkBase/TrkMomCalculator.hh"
-
 //Fitting
 #include "Offline/Mu2eUtilities/inc/ParametricFit.hh"
 #include "Offline/Mu2eUtilities/inc/BuildLinearFitMatrixSums.hh"
-#include "Offline/CosmicReco/inc/MinuitDriftFitter.hh"
-#include "Offline/CosmicReco/inc/DriftFitUtils.hh"
 #include "Offline/DataProducts/inc/GenVector.hh"
 
 //ROOT:
@@ -475,54 +461,6 @@ void CosmicTrackFit::ConvertFitToDetectorFrame(TrackAxes axes, XYZVectorF Positi
     bool CosmicTrackFit::use_track(double track_length) const
     {
         return (track_length > _maxd) ? false : true ;
-    }
-
-    void CosmicTrackFit::DriftFit(CosmicTrackSeed& tseed, StrawResponse const& _srep ){
-
-      FitResult endresult = MinuitDriftFitter::DoFit(_diag, tseed, _srep, _tracker, _maxHitDOCA, _minnch, _maxLogL, _gaussTres, _maxTres);
-
-      tseed._track.MinuitParams.A0 =  endresult.bestfit[0];//a0
-      tseed._track.MinuitParams.A1 =  endresult.bestfit[1];//a1
-      tseed._track.MinuitParams.B0 =  endresult.bestfit[2];//b0
-      tseed._track.MinuitParams.B1 =  endresult.bestfit[3];//b1
-      tseed._track.MinuitParams.T0 =  endresult.bestfit[4];//t0
-
-      tseed._track.MinuitParams.deltaA0 =  endresult.bestfiterrors[0];//erra0
-      tseed._track.MinuitParams.deltaA1 =  endresult.bestfiterrors[1];//erra1
-      tseed._track.MinuitParams.deltaB0 =  endresult.bestfiterrors[2];//errb0
-      tseed._track.MinuitParams.deltaB1 =  endresult.bestfiterrors[3];//errb1
-      tseed._track.MinuitParams.deltaT0 =  endresult.bestfiterrors[4];//errt0
-
-      if(endresult.bestfitcov.size() !=0 ){
-        TrackCov Cov(endresult.bestfitcov[0], 0., 0., endresult.bestfitcov[1], endresult.bestfitcov[2],0.,0., endresult.bestfitcov[3]);
-        tseed._track.MinuitParams.Covarience = Cov;
-      }
-      if(endresult.NLL !=0){ tseed._track.minuit_converged = true; }
-
-      XYZVectorF X(1,0,0);
-      XYZVectorF Y(0,1,0);
-      XYZVectorF Z(0,0,1);
-
-      TrackAxes XYZ(X,Y,Z);
-      tseed._track.MinuitCoordSystem = XYZ;
-      tseed._track.MinuitEquation.Pos = XYZVectorF(tseed._track.MinuitParams.A0,tseed._track.MinuitParams.B0,0);
-      tseed._track.MinuitEquation.Dir = XYZVectorF(tseed._track.MinuitParams.A1,tseed._track.MinuitParams.B1,1);
-
-      unsigned int n_outliers = 0;
-      if(endresult.FullFitEndTimeResiduals.size() >0){
-        for(unsigned i = 0; i< endresult.FullFitEndTimeResiduals.size()-1; i++){
-          if( endresult.FullFitEndTimeResiduals[i] > _maxTres or isnan(endresult.FullFitEndTimeResiduals[i])==true){
-            n_outliers +=1;
-            tseed._straw_chits[i]._flag.merge(StrawHitFlag::outlier);
-
-          }
-        }
-
-      }
-      if( n_outliers  > _n_outliers) {
-        tseed._track.minuit_converged = false;
-      }
-
     }
 
 }//end namespace

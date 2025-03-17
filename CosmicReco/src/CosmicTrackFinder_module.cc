@@ -40,9 +40,6 @@
 #include "Offline/TrkReco/inc/PanelStateIterator.hh"
 #include "Offline/TrkReco/inc/TrkFaceData.hh"
 
-// Mu2e BaBar
-#include "Offline/BTrkData/inc/TrkStrawHit.hh"
-
 //CLHEP:
 #include "CLHEP/Units/PhysicalConstants.h"
 #include "CLHEP/Matrix/Vector.h"
@@ -266,11 +263,7 @@ namespace mu2e {
         if (tseed.status().hasAnyProperty(_saveflag)){
 
           if(_DoDrift) {
-            if (_UseTime) {
-              MinuitDriftFitter::DoDriftTimeFit(_debug,tseed, srep, &tracker, _driftRes, _mnTolerance, _mnPrecision );
-            } else {
-              _tfit.DriftFit(tseed, srep);
-            }
+            MinuitDriftFitter::DoDriftTimeFit(_debug,tseed, srep, &tracker, _driftRes, _mnTolerance, _mnPrecision );
 
             if( !tseed._track.minuit_converged ){
               continue;
