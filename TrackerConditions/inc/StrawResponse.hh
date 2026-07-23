@@ -53,7 +53,13 @@ namespace mu2e {
           std::array<double,StrawElectronics::npaths> dVdI,
           double vsat, double ADCped, double pmpEnergyScaleAvg,
           std::array<double, StrawId::_nustraws> strawHalfvp,
-          bool driftIgnorePhi) :
+          bool driftIgnorePhi,
+          std::vector<double> totDriftTimeOffBins, std::vector<double> totDriftTimeOffset,
+          std::vector<double> totDriftTimeRMSBins, std::vector<double> totDriftTimeRMS,
+          std::vector<double> totOffBins, std::vector<double> totOffset, std::vector<double> totRMS,
+          std::vector<double> llDriftTimeWeight2, std::vector<double> llDriftTimeOffset2,
+          std::vector<double> llDriftTimeRMS2
+          ) :
         ProditionsEntity(cxname),
         _strawDrift(strawDrift),
         _strawElectronics(strawElectronics),
@@ -83,7 +89,30 @@ namespace mu2e {
         _dVdI(dVdI), _vsat(vsat), _ADCped(ADCped),
         _pmpEnergyScaleAvg(pmpEnergyScaleAvg),
         _strawHalfvp(strawHalfvp),
-        _driftIgnorePhi(driftIgnorePhi){ }
+        _driftIgnorePhi(driftIgnorePhi),
+        _totDriftTimeOffBins(totDriftTimeOffBins),
+        _totDriftTimeRMSBins(totDriftTimeRMSBins),
+        _totOffBins(totOffBins),
+        _totOffset(totOffset),
+        _totRMS(totRMS),
+        _llDriftTimeWeight2(llDriftTimeWeight2),
+        _llDriftTimeOffset2(llDriftTimeOffset2),
+        _llDriftTimeRMS2(llDriftTimeRMS2)
+    {
+      for (size_t i=0;i<totOffBins.size();i++){
+        _totDriftTimeOffset.push_back(std::vector<double>{});
+        _totDriftTimeRMS.push_back(std::vector<double>{});
+      }
+      size_t j=0;
+      for (size_t i=0;i<totDriftTimeOffset.size();i++){
+        _totDriftTimeOffset[j].push_back(totDriftTimeOffset[i]);
+        _totDriftTimeRMS[j].push_back(totDriftTimeRMS[i]);
+        j++;
+        if (j >= totOffBins.size()){
+          j = 0;
+        }
+      }
+    }
 
       virtual ~StrawResponse() {}
 
@@ -147,6 +176,14 @@ namespace mu2e {
 
       double wpRes(double kedep, double wdist) const;
 
+      double D2T(double doca) const;
+      double D2Tvariance(double doca) const;
+      double D2Tslope(double doca) const;
+      double D2T2(double doca) const;
+      double D2T2variance(double doca) const;
+      double D2T2slope(double doca) const;
+      double D2T2weight(double doca) const;
+
       // access raw drift information
       auto const& strawDrift() const { return *_strawDrift; }
     private:
@@ -155,6 +192,7 @@ namespace mu2e {
       static double PieceLine(std::vector<double> const& xvals,
           std::vector<double> const& yvals, double xval);
       static double PieceLineDrift(std::vector<double> const& bins, std::vector<double> const& yvals, double xval);
+      static double PieceLineDriftSlope(std::vector<double> const& bins,std::vector<double> const& yvals, double xval);
       static void interpolateCalib(std::vector<double> const& bins,std::vector<double> const& yvals, double xval,
           int halfrange, double& value, double& slope);
 
@@ -215,6 +253,17 @@ namespace mu2e {
 
       bool _driftIgnorePhi;
       static double rstraw_; // straw radius, = maximum drift distance
+
+      std::vector<double> _totDriftTimeOffBins;
+      std::vector<double> _totDriftTimeRMSBins;
+      std::vector<double> _totOffBins;
+      std::vector<double> _totOffset;
+      std::vector<double> _totRMS;
+      std::vector<std::vector<double> > _totDriftTimeOffset;
+      std::vector<std::vector<double> > _totDriftTimeRMS;
+      std::vector<double> _llDriftTimeWeight2;
+      std::vector<double> _llDriftTimeOffset2;
+      std::vector<double> _llDriftTimeRMS2;
   };
 }
 #endif

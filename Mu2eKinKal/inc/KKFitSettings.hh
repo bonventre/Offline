@@ -13,6 +13,7 @@
 #include "Offline/DataProducts/inc/PDGCode.hh"
 // updaters
 #include "Offline/Mu2eKinKal/inc/CADSHU.hh"
+#include "Offline/Mu2eKinKal/inc/DVarSHU.hh"
 #include "Offline/Mu2eKinKal/inc/DriftANNSHU.hh"
 #include "Offline/Mu2eKinKal/inc/BkgANNSHU.hh"
 #include "Offline/Mu2eKinKal/inc/Chi2SHU.hh"
@@ -40,6 +41,8 @@ namespace mu2e {
       MetaIterationSettings miConfig { Name("MetaIterationSettings"), Comment("Temperature (dimensionless), StrawHitUpdater algorithm") };
       using CADSHUSettings = fhicl::OptionalSequence<fhicl::Tuple<float,float,float,float,std::string,std::string,std::string,int>>;
       CADSHUSettings cadshuConfig{ Name("CADSHUSettings"), Comment(CADSHU::configDescription()) };
+      using DVarSHUSettings = fhicl::OptionalSequence<fhicl::Tuple<float,float,float,float,float,float,float,std::string,std::string,std::string,int>>;
+      DVarSHUSettings dvarshuConfig{ Name("DVarSHUSettings"), Comment(DVarSHU::configDescription()) };
       using DriftANNSHUSettings = fhicl::OptionalSequence<fhicl::Tuple<std::string,float,std::string,float,float,std::string,std::string,int>>;
       DriftANNSHUSettings annshuConfig{ Name("DriftANNSHUSettings"), Comment(DriftANNSHU::configDescription()) };
       using BkgANNSHUSettings = fhicl::OptionalSequence<fhicl::Tuple<std::string,float,std::string,int>>;

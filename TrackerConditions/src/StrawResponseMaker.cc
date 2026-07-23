@@ -115,7 +115,13 @@ namespace mu2e {
         electronicsTimeDelay,
         gasGain, analognoise, dVdI, vsat, ADCped,
         pmpEnergyScaleAvg, strawHalfPropVelocity,
-        _config.driftIgnorePhi());
+        _config.driftIgnorePhi(),
+        _config.totDriftTimeOffBins(),_config.totDriftTimeOffset(),
+        _config.totDriftTimeRMSBins(),_config.totDriftTimeRMS(),
+        _config.totOffBins(),_config.totOffset(), _config.totRMS(),
+        _config.llDriftTimeWeight2(),_config.llDriftTimeOffset2(),
+        _config.llDriftTimeRMS2()
+        );
 
     std::array<double, StrawId::_nupanels> timeOffsetPanel;
     std::array<double, StrawId::_nustraws> timeOffsetStrawHV, timeOffsetStrawCal;

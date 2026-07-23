@@ -29,6 +29,7 @@ namespace mu2e {
         KinKal::Residual const& utresid, KinKal::Residual const& udresid, KinKal::Residual const& ulresid,
         KinKal::Residual const& rtresid, KinKal::Residual const& rdresid, KinKal::Residual const& rlresid,
         DriftInfo const& dinfo,
+        DriftInfo const& udinfo,
         WireHitState const& whs,
         Straw const& straw) :
       _index(index), _sid(chit.strawId()),_eend(chit.earlyEnd()),
@@ -92,6 +93,18 @@ namespace mu2e {
       if(udresid.active())_kkshflag.merge(KKSHFlag::goodudresid);
       if(utresid.active())_kkshflag.merge(KKSHFlag::goodutresid);
       if(ulresid.active())_kkshflag.merge(KKSHFlag::goodulresid);
+
+      _wplus = whs.wplus_;
+      _wplus2 = whs.wplus2_;
+      _wminus = whs.wminus_;
+      _wminus2 = whs.wminus2_;
+      _uwtail = udinfo.wtail_;
+      _udcore = udinfo.dcore_;
+      _udtail = udinfo.dtail_;
+      _uvcore = udinfo.vcore_;
+      _uvtail = udinfo.vtail_;
+      _udprimecore = udinfo.dprimecore_;
+      _udprimetail = udinfo.dprimetail_;
     }
 
     //Legacy constructor for BTrk
@@ -199,6 +212,18 @@ namespace mu2e {
     float     _trklen =0;    // track flightlength
     float     _hitlen =0;    // hit flightlength
     float     _stime =0;   // signal propagation time for this hit, to the nearest end
+
+    float _wplus = 0;
+    float _wplus2 = 0;
+    float _wminus = 0;
+    float _wminus2 = 0;
+    float _uwtail = 0;
+    float _udcore = 0;
+    float _udtail = 0;
+    float _uvcore = 0;
+    float _uvtail = 0;
+    float _udprimecore = 0;
+    float _udprimetail = 0;
   };
   // binary functor to sort TrkStrawHits by StrawHit index
   struct indexcompseed {

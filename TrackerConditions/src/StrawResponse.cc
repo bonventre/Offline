@@ -10,6 +10,51 @@ using namespace std;
 namespace mu2e {
   double StrawResponse::rstraw_(2.5);  // should come from geometry, TODO
 
+  double StrawResponse::D2T(double doca) const {
+    return PieceLineDrift(_llDriftTimeOffBins, _llDriftTimeOffset, doca);
+//    std::vector<double> xvals = {0.0, 0.5, 1.0, 1.5, 2.0, 2.5};
+//    std::vector<double> yvals = {6.5, 9.5, 16.0, 23.5, 30.0, 39.0};
+//    return PieceLine(xvals,yvals,doca);
+  }
+
+  double StrawResponse::D2Tvariance(double doca) const {
+//    doca = std::max(0.0,std::min(rstraw_,doca));
+    return pow(PieceLineDrift(_llDriftTimeRMSBins, _llDriftTimeRMS, doca),2);
+//    std::vector<double> xvals = {0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0};
+//    std::vector<double> yvals = {6.0, 5.0, 3.5, 3.0, 2.5, 1.8, 1.8};
+//    double sigma = PieceLine(xvals,yvals,doca);
+//    return sigma*sigma;
+  }
+
+  double StrawResponse::D2Tslope(double doca) const {
+    return PieceLineDriftSlope(_llDriftTimeOffBins, _llDriftTimeOffset, doca);
+//    std::vector<double> xvals = {0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0};
+//    std::vector<double> yvals = {4.0, 10.0, 14.0, 15.0, 16.0, 18.0, 18.0};
+//    return PieceLine(xvals,yvals,doca);
+  }
+
+  double StrawResponse::D2T2(double doca) const {
+    return PieceLineDrift(_llDriftTimeOffBins, _llDriftTimeOffset2, doca);
+  }
+
+  double StrawResponse::D2T2variance(double doca) const {
+    return pow(PieceLineDrift(_llDriftTimeRMSBins, _llDriftTimeRMS2, doca),2);
+  }
+
+  double StrawResponse::D2T2slope(double doca) const {
+    return PieceLineDriftSlope(_llDriftTimeOffBins, _llDriftTimeOffset2, doca);
+  }
+
+  double StrawResponse::D2T2weight(double doca) const {
+    return PieceLineDrift(_llDriftTimeOffBins, _llDriftTimeWeight2, doca);
+  }
+
+//  double StrawResponse::D2Ttot(double doca, double tott) const {
+//    int itbin = min(3,max(0,int(floor(tott/8.))));
+//    double v0 = PieceLineDrift(_totDriftTimeOffBins[itbin], _totDriftTimeOffset[itbin], doca);
+//    double v1 = PieceLineDrift(_totDriftTimeOffBins[itbin+1], _totDriftTimeOffset[itbin+1], doca);
+//  }
+
   // simple line interpolation, this should be a utility function, TODO
   // This only works if the bins are uniform, should be rewritten TODO
   double StrawResponse::PieceLine(std::vector<double> const& xvals, std::vector<double> const& yvals, double xval){
@@ -32,6 +77,15 @@ namespace mu2e {
     double slope = (yvals[jbin]-yvals[ibin])/xbin;
     yval += (xval-(bins[0]+xbin*ibin))*slope;
     return yval;
+  }
+
+  double StrawResponse::PieceLineDriftSlope(std::vector<double> const& bins,std::vector<double> const& yvals, double xval){
+      int imax = yvals.size()-2;
+    double xbin = (bins[1]-bins[0])/yvals.size();
+    int ibin = min(imax,max(0,int(floor((xval-bins[0])/xbin))));
+    auto jbin = ibin+1;
+    double slope = (yvals[jbin]-yvals[ibin])/xbin;
+    return slope;
   }
 
   void StrawResponse::interpolateCalib(std::vector<double> const& bins,std::vector<double> const& yvals, double xval,
@@ -82,6 +136,15 @@ namespace mu2e {
     double serrslope,uerrslope;
     interpolateCalib(_driftRMSBins,_signedDriftRMS, dinfo.rDrift_, halfrange, dinfo.signedDriftError_, serrslope);
     interpolateCalib(_driftRMSBins,_unsignedDriftRMS, dinfo.rDrift_, halfrange, dinfo.unsignedDriftError_ , uerrslope);
+
+    dinfo.wtail_ = D2T2weight(dtime);
+    dinfo.dcore_ = D2T(dtime);
+    dinfo.dtail_ = D2T2(dtime);
+    dinfo.vcore_ = D2Tvariance(dtime);
+    dinfo.vtail_ = D2T2variance(dtime);
+    dinfo.dprimecore_ = D2Tslope(dtime);
+    dinfo.dprimetail_ = D2T2slope(dtime);
+
     return dinfo;
   }
 

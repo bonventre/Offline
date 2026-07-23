@@ -719,6 +719,7 @@ namespace mu2e {
           strawhit->refResidual(Mu2eKinKal::dresid),
           strawhit->refResidual(Mu2eKinKal::lresid),
           strawhit->fillDriftInfo(strawhit->closestApproach()),
+          strawhit->fillDriftInfo(strawhit->unbiasedClosestApproach()),
           strawhit->hitState(),
           strawhit->straw());
       if (saveHitCalib_){

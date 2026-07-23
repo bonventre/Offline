@@ -18,6 +18,10 @@ namespace mu2e {
     KKSHFlag flag_; // flags for KKStrawHit
     using QType = std::array<double,4>;
     QType quality_ = {-1.0,-1.0,-1.0,-1.0}; // algorithm-dependent, dimensionless quality of this state assignment
+    double wplus_ = 0;
+    double wminus_ = 0;
+    double wplus2_ = 0;
+    double wminus2_ = 0;
 // convenience functions
     bool frozen() const { return frozen_; }
     bool wireConstraint() const { return state_ == null; }

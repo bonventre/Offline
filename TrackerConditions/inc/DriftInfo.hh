@@ -11,6 +11,15 @@ namespace mu2e {
     double signedDriftError_ =0; // estimated error on signed drift distance (includes LR ambiguity error effects)
     double unsignedDriftError_ =0; // estimated error on unsigned drift distance
     double driftVelocity_ =0; // instantaneous drift velocity
+
+    double wtail_ = 0;
+    double dcore_ = 0;
+    double dtail_ = 0;
+    double vcore_ = 0;
+    double vtail_ = 0;
+    double dprimecore_ = 0;
+    double dprimetail_ = 0;
+
     static double maxdvar_; // maximum distance variance, given by straw radius
     double driftHitVar() const { return signedDriftError_*signedDriftError_; } // variance for hits constrained to the signed drift distance
     double nullHitVar() const; // variance for hits constrained to the wire position (null hits)

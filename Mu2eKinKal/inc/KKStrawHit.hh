@@ -20,6 +20,7 @@
 #include "Offline/TrackerConditions/inc/DriftInfo.hh"
 #include "Offline/TrackerConditions/inc/StrawResponse.hh"
 #include "Offline/Mu2eKinKal/inc/CADSHU.hh"
+#include "Offline/Mu2eKinKal/inc/DVarSHU.hh"
 #include "Offline/Mu2eKinKal/inc/DriftANNSHU.hh"
 #include "Offline/Mu2eKinKal/inc/BkgANNSHU.hh"
 #include "Offline/Mu2eKinKal/inc/Chi2SHU.hh"
@@ -126,6 +127,10 @@ namespace mu2e {
       // clone support
       void setClosestApproach(const CA& ca){ ca_ = ca; }
       auto wirePtr() const { return ca_.sensorTrajPtr(); }
+      double wplus_;
+      double wminus_;
+      double wplus2_;
+      double wminus2_;
   };
 
   // struct to sort hits by time
@@ -177,6 +182,7 @@ namespace mu2e {
   template <class KTRAJ> void KKStrawHit<KTRAJ>::updateWHS(MetaIterConfig const& miconfig) {
     // search for updaters that work directly on StrawHits (not StrawHitClusters)
     auto cashu = miconfig.findUpdater<CADSHU>();
+    auto dvarshu = miconfig.findUpdater<DVarSHU>();
     auto driftshu = miconfig.findUpdater<DriftANNSHU>();
     auto bkgshu = miconfig.findUpdater<BkgANNSHU>();
     auto diagshu = miconfig.findUpdater<PanelDiagSHU>();
@@ -186,8 +192,33 @@ namespace mu2e {
       // there can be multiple updaters: apply them all
       if(diagshu)whstate_ = diagshu->wireHitState(whstate_,straw_.id());
       if(cashu)whstate_ = cashu->wireHitState(whstate_,ca.tpData(),dinfo);
+
+      double absdoca = std::fabs(ca.doca());
+      double tprime_dref = sresponse_.D2Tslope(absdoca);
+      double d_meas = absdoca + (ca.deltaT() - sresponse_.D2T(absdoca))/tprime_dref;
+      double var_d = sresponse_.D2Tvariance(absdoca) / (tprime_dref * tprime_dref);
+      wplus_ = 0.5;
+      wminus_ = 0.5;
+      wplus2_ = 0.0;
+      wminus2_ = 0.0;
+
+      // T2D version
+      tprime_dref = sresponse_.D2Tslope(ca.deltaT());
+      d_meas = sresponse_.D2T(ca.deltaT());
+      var_d = sresponse_.D2Tvariance(ca.deltaT());
+
+      double d_meas2 = sresponse_.D2T2(ca.deltaT());
+      double var_d2 = sresponse_.D2T2variance(ca.deltaT());
+      double wprior2 = sresponse_.D2T2weight(ca.deltaT());
+
+      if(dvarshu)whstate_ = dvarshu->wireHitState(whstate_,ca.tpData(),dinfo,miconfig.varianceScale(),d_meas, var_d, d_meas2, var_d2, wprior2, wplus_, wminus_, wplus2_, wminus2_);
       if(bkgshu)whstate_ = bkgshu->wireHitState(whstate_,ca.tpData(),dinfo,chit_);
       if(driftshu)whstate_ = driftshu->wireHitState(whstate_,ca.tpData(),dinfo,chit_);
+
+      whstate_.quality_[WireHitState::sign] = wplus_ - wminus_;
+      whstate_.quality_[WireHitState::chi2] = wplus_ + wminus_ - wplus2_ - wminus2_;
+      whstate_.quality_[WireHitState::drift] = d_meas;
+      whstate_.quality_[WireHitState::bkg] = d_meas2;
       if(whstate_.driftConstraint()){
         dVar_ = dinfo.driftHitVar();
         if(whstate_.constrainDriftDt()){
@@ -255,9 +286,64 @@ namespace mu2e {
       }
       // distance residual
       if(whstate.driftConstraint()){
-        double dr = whstate.lrSign()*dinfo.rDrift_ - ca_.doca();
-        DVEC dRdP = whstate.lrSign()*dDdT_*ca_.dTdP() -ca_.dDdP();
-        resids[Mu2eKinKal::dresid] = Residual(dr,dVar_,0.0,dRdP);
+//        double absdoca = std::fabs(ca_.doca());
+//        double tprime_dref = sresponse_.D2Tslope(absdoca);
+//        double d_meas = absdoca + (ca_.deltaT() - sresponse_.D2T(absdoca))/tprime_dref;
+//        double var_d = sresponse_.D2Tvariance(absdoca) / (tprime_dref * tprime_dref);
+//        double signed_weight = (wplus_ - wminus_);
+//        double dr = signed_weight*d_meas - ca_.doca();
+//        double dvar = var_d + wplus_*wminus_*pow(2*d_meas,2);
+////        std::cout << straw_.id() << " " << ca_.doca() << " " << d_meas << " " << var_d << " " << wplus_ << " " << wminus_ << " " << signed_weight << " dr " << dr << " " << dvar << std::endl;
+//        DVEC dRdP = signed_weight/tprime_dref*ca_.dTdP() -ca_.dDdP();
+//        resids[Mu2eKinKal::dresid] = Residual(dr,dvar,0.0,dRdP);
+
+        // T2D version
+//        double signed_weight = (wplus_ - wminus_);
+//        double tprime_dref = sresponse_.D2Tslope(ca_.deltaT());
+//        double d_meas = sresponse_.D2T(ca_.deltaT());
+//        double var_d = sresponse_.D2Tvariance(ca_.deltaT());
+//        double dr = signed_weight*d_meas - ca_.doca();
+//        double dvar = var_d + wplus_*wminus_*pow(2*d_meas,2);
+//        DVEC dRdP = signed_weight*tprime_dref*ca_.dTdP() -ca_.dDdP();
+//        resids[Mu2eKinKal::dresid] = Residual(dr,dvar,0.0,dRdP);
+
+        // T2D 2 gaussian mixture version
+        double tprime_dref = sresponse_.D2Tslope(ca_.deltaT());
+        double tprime_dref2 = sresponse_.D2T2slope(ca_.deltaT());
+        double d_meas = sresponse_.D2T(ca_.deltaT());
+        double var_d = sresponse_.D2Tvariance(ca_.deltaT());
+        double d_meas2 = sresponse_.D2T2(ca_.deltaT());
+        double var_d2 = sresponse_.D2T2variance(ca_.deltaT());
+
+        double d_meas_eff = wplus_*d_meas - wminus_*d_meas + wplus2_*d_meas2 - wminus2_*d_meas2;
+        double dvar = (wplus_ + wminus_)*(var_d + pow(d_meas,2)) + (wplus2_ + wminus2_)*(var_d2 + pow(d_meas2,2)) - pow(d_meas_eff,2);
+        double dr = d_meas_eff - ca_.doca();
+        if (d_meas < 0)
+          tprime_dref *= -1;
+        if (d_meas2 < 0)
+          tprime_dref2 *= -1;
+        DVEC dRdP = ((wplus_ - wminus_)*tprime_dref + (wplus2_ - wminus2_)*tprime_dref2)*ca_.dTdP() - ca_.dDdP();
+        resids[Mu2eKinKal::dresid] = Residual(dr,dvar,0.0,dRdP);
+
+
+        /*
+        if (var_d < 0.16*0.16 && ca_.deltaT() > 30 && ca_.deltaT() < 50){
+          std::cout << "Doca: " << ca_.doca() << " rmsDoca: " << sqrt(ca_.docaVar()) << " Deltat: " << ca_.deltaT() << " dr: " << dr << " drrms: " << sqrt(dvar) << std::endl;
+          std::cout << "weights: " << wplus_ << " " << wminus_ << " " << wplus2_ << " " << wminus2_ << std::endl;
+          std::cout << "d_meas: " << d_meas << " " << d_meas2 << std::endl;
+          std::cout << "std_d_meas: " << sqrt(var_d) << " " << sqrt(var_d2) << std::endl;
+        }
+        */
+
+        //double absdoca = std::fabs(ca_.doca());
+        //double dr = ca_.deltaT() - sresponse_.D2T(absdoca);
+        //double dvar = sresponse_.D2Tvariance(absdoca);
+        //DVEC dRdP = ca_.dTdP() - sresponse_.D2Tslope(absdoca) * ca_.doca()/absdoca * ca_.dDdP();
+        //resids[Mu2eKinKal::dresid] = Residual(dr,dvar,0.0,dRdP);
+
+        //double dr = whstate.lrSign()*dinfo.rDrift_ - ca_.doca();
+        //DVEC dRdP = whstate.lrSign()*dDdT_*ca_.dTdP() -ca_.dDdP();
+        //resids[Mu2eKinKal::dresid] = Residual(dr,dVar_,0.0,dRdP);
       } else {
         // Null LR ambiguity. interpret DOCA against the wire directly as the spatial residual
         resids[Mu2eKinKal::dresid] = Residual(ca_.doca(),dVar_,0.0,ca_.dDdP());

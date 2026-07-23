@@ -24,12 +24,14 @@ namespace mu2e {
       config.tol_ = fitconfig.btol();
       // create the updaters requested
       std::vector<CADSHU::Config> cadshusettings;
+      std::vector<DVarSHU::Config> dvarshusettings;
       std::vector<DriftANNSHU::Config> driftannshusettings;
       std::vector<BkgANNSHU::Config> bkgannshusettings;
       std::vector<PanelDiagSHU::Config> paneldiagshusettings;
       std::vector<Chi2SHU::Config> chi2shusettings;
       // specific updaters can be empty, so fetch config data with a default empty vector
       cadshusettings = fitconfig.cadshuConfig().value_or(cadshusettings);
+      dvarshusettings = fitconfig.dvarshuConfig().value_or(dvarshusettings);
       driftannshusettings = fitconfig.annshuConfig().value_or(driftannshusettings);
       bkgannshusettings = fitconfig.bkgshuConfig().value_or(bkgannshusettings);
       paneldiagshusettings = fitconfig.paneldiagshuConfig().value_or(paneldiagshusettings);
@@ -37,7 +39,7 @@ namespace mu2e {
       // straw material updater must always be here
       auto const& sxusettings = fitconfig.sxuConfig();
       // set the schedule for the meta-iterations
-      unsigned ncadshu(0), nann(0), nbkg(0), ncomb(0), nnone(0), nsxu(0), npdiag(0);
+      unsigned ncadshu(0), ndvarshu(0), nann(0), nbkg(0), ncomb(0), nnone(0), nsxu(0), npdiag(0);
       for(auto const& misetting : fitconfig.miConfig()) {
         MetaIterConfig miconfig(std::get<0>(misetting));
         // parse StrawHit updaters, and add to the config of this meta-iteraion
@@ -47,6 +49,8 @@ namespace mu2e {
           auto alg = StrawHitUpdaters::algo(aname);
           if(alg == StrawHitUpdaters::CAD) {
             miconfig.addUpdater(std::any(CADSHU(cadshusettings.at(ncadshu++))));
+          } else if(alg == StrawHitUpdaters::DVar) {
+            miconfig.addUpdater(std::any(DVarSHU(dvarshusettings.at(ndvarshu++))));
           } else if(alg == StrawHitUpdaters::DriftANN) {
             miconfig.addUpdater(std::any(DriftANNSHU(driftannshusettings.at(nann++))));
           } else if(alg == StrawHitUpdaters::BkgANN) {
@@ -70,6 +74,8 @@ namespace mu2e {
       // consistency checks
       if(cadshusettings.size() != ncadshu)
         throw cet::exception("RECO")<<"mu2e::KKFitSettings: inconsistent number of CA StrawHit updaters" <<  std::endl;
+      if(dvarshusettings.size() != ndvarshu)
+        throw cet::exception("RECO")<<"mu2e::KKFitSettings: inconsistent number of DVar StrawHit updaters" <<  std::endl;
       if(driftannshusettings.size() != nann)
         throw cet::exception("RECO")<<"mu2e::KKFitSettings: inconsistent number of ANN StrawHit updaters" <<  std::endl;
       if(bkgannshusettings.size() != nbkg)

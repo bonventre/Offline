@@ -111,6 +111,29 @@ namespace mu2e {
     fhicl::OptionalAtom<double> ADCPedestal {
       Name("ADCPedestal"), Comment("ADCPedestal")};
 
+    fhicl::Sequence<double> totDriftTimeOffBins {
+      Name("totDriftTimeOffBins"), Comment("Drift time Offset Bin edges for likelihood fit (mm)")};
+    fhicl::Sequence<double> totDriftTimeOffset {
+      Name("totDriftTimeOffset"), Comment("Drift time offset for likelihood fit (ns)")};
+    fhicl::Sequence<double> totDriftTimeRMSBins {
+      Name("totDriftTimeRMSBins"), Comment("Drift time RMS Bin edges for likelihood fit (mm)")};
+    fhicl::Sequence<double> totDriftTimeRMS {
+      Name("totDriftTimeRMS"), Comment("Drift time RMS for likelihood fit (ns)")};
+    fhicl::Sequence<double> totOffBins {
+      Name("totOffBins"), Comment("Drift time Offset Bin edges for likelihood fit (mm)")};
+    fhicl::Sequence<double> totOffset {
+      Name("totOffset"), Comment("Drift time offset for likelihood fit (ns)")};
+    fhicl::Sequence<double> totRMSBins {
+      Name("totRMSBins"), Comment("Drift time RMS Bin edges for likelihood fit (mm)")};
+    fhicl::Sequence<double> totRMS {
+      Name("totRMS"), Comment("Drift time RMS for likelihood fit (ns)")};
+    fhicl::Sequence<double> llDriftTimeWeight2 {
+      Name("llDriftTimeWeight2"), Comment("Drift time Offset Bin edges for likelihood fit (mm)")};
+    fhicl::Sequence<double> llDriftTimeOffset2 {
+      Name("llDriftTimeOffset2"), Comment("Drift time offset for likelihood fit (ns)")};
+    fhicl::Sequence<double> llDriftTimeRMS2 {
+      Name("llDriftTimeRMS2"), Comment("Drift time RMS Bin edges for likelihood fit (mm)")};
+
   };
 
 }
